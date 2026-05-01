@@ -1,30 +1,35 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Every utility resolves to a CSS variable from styles/tokens.css.
+ * Variable names mirror the design system bundle exactly (--bg-base,
+ * --fg-primary, etc). Do not introduce hex literals here.
+ */
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
-  darkMode: "class",
+  darkMode: ["class", '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
-        // Background layers
+        // Background layers (page → elevated → card → hover/selected)
         bg: {
-          page: "var(--bg-page)",
+          base: "var(--bg-base)",
           elevated: "var(--bg-elevated)",
           card: "var(--bg-card)",
           hover: "var(--bg-hover)",
+          selected: "var(--bg-selected)",
         },
         // Text
         fg: {
-          primary: "var(--text-primary)",
-          secondary: "var(--text-secondary)",
-          muted: "var(--text-muted)",
-          subtle: "var(--text-subtle)",
+          primary: "var(--fg-primary)",
+          secondary: "var(--fg-secondary)",
+          dim: "var(--fg-dim)",
+          "on-coral": "var(--fg-on-coral)",
         },
         // Borders
-        border: {
-          subtle: "var(--border-subtle)",
-          emphasis: "var(--border-emphasis)",
-        },
+        "border-subtle": "var(--border-subtle)",
+        "border-emphasis": "var(--border-emphasis)",
+        "border-focus": "var(--border-focus)",
         // Brand accents
         coral: {
           DEFAULT: "var(--brand-coral)",
@@ -32,33 +37,45 @@ const config: Config = {
           deep: "var(--brand-coral-deep)",
           darker: "var(--brand-coral-darker)",
         },
-        teal: {
-          DEFAULT: "var(--brand-teal)",
+        teal: "var(--brand-teal)",
+        // Semantic (used for status pills with 10% bg + full color text/border)
+        success: {
+          DEFAULT: "var(--success)",
+          bg: "var(--success-bg)",
         },
-        // Semantic
-        success: "var(--semantic-success)",
-        warning: "var(--semantic-warning)",
-        error: "var(--semantic-error)",
-        info: "var(--semantic-info)",
+        warning: {
+          DEFAULT: "var(--warning)",
+          bg: "var(--warning-bg)",
+        },
+        error: {
+          DEFAULT: "var(--error)",
+          bg: "var(--error-bg)",
+        },
+        info: {
+          DEFAULT: "var(--info)",
+          bg: "var(--info-bg)",
+        },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
       },
       fontSize: {
-        "2xs": ["12px", { lineHeight: "16px" }],
-        xs: ["12px", { lineHeight: "16px" }],
-        sm: ["14px", { lineHeight: "20px" }],
-        base: ["14px", { lineHeight: "20px" }],
-        md: ["16px", { lineHeight: "24px" }],
-        lg: ["18px", { lineHeight: "26px" }],
-        xl: ["20px", { lineHeight: "28px" }],
-        "2xl": ["24px", { lineHeight: "32px" }],
-        "3xl": ["32px", { lineHeight: "40px" }],
-        "4xl": ["48px", { lineHeight: "56px" }],
+        "12": ["12px", { lineHeight: "16px" }],
+        "14": ["14px", { lineHeight: "20px" }],
+        "16": ["16px", { lineHeight: "24px" }],
+        "18": ["18px", { lineHeight: "26px" }],
+        "20": ["20px", { lineHeight: "28px" }],
+        "24": ["24px", { lineHeight: "32px" }],
+        "32": ["32px", { lineHeight: "40px" }],
+        "48": ["48px", { lineHeight: "56px" }],
+      },
+      fontWeight: {
+        regular: "400",
+        medium: "500",
+        bold: "700",
       },
       spacing: {
-        "0.5": "2px",
         "1": "4px",
         "2": "8px",
         "3": "12px",
@@ -69,24 +86,40 @@ const config: Config = {
         "16": "64px",
       },
       borderRadius: {
-        sm: "8px",
-        DEFAULT: "8px",
+        sm: "4px",
         md: "8px",
         lg: "12px",
         full: "999px",
       },
+      borderWidth: {
+        DEFAULT: "1px",
+      },
+      maxWidth: {
+        content: "var(--content-max)",
+      },
+      width: {
+        sidebar: "var(--sidebar-w)",
+      },
       transitionDuration: {
-        "80": "80ms",
-        "140": "140ms",
-        "200": "200ms",
+        fast: "80ms",
+        base: "140ms",
+        slow: "200ms",
       },
       transitionTimingFunction: {
-        "ease-out-snap": "cubic-bezier(0.22, 0.61, 0.36, 1)",
-        "ease-state": "cubic-bezier(0.4, 0, 0.2, 1)",
+        out: "cubic-bezier(0.22, 0.61, 0.36, 1)",
+        inout: "cubic-bezier(0.4, 0, 0.2, 1)",
       },
       letterSpacing: {
         tight: "-0.02em",
+        snug: "-0.01em",
+        wide: "0.04em",
         tag: "0.08em",
+      },
+      boxShadow: {
+        popover: "var(--shadow-popover)",
+        overlay: "var(--shadow-overlay)",
+        "ring-coral": "var(--ring-coral)",
+        "selected-inset": "inset 0 0 0 1px var(--brand-coral)",
       },
     },
   },
