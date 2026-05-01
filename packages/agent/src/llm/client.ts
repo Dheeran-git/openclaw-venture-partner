@@ -1,11 +1,11 @@
 import { ZodError, type ZodType } from "zod";
-import { logLLMCall } from "./logger.js";
-import { pickProvider } from "./router.js";
+import { logLLMCall } from "./logger";
+import { pickProvider } from "./router";
 import {
   LLMValidationError,
   type LLMClient,
   type LLMRequest,
-} from "./types.js";
+} from "./types";
 
 /**
  * The single LLM entry point. Every business module imports this.

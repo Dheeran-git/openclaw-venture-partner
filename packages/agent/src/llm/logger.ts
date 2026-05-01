@@ -1,9 +1,9 @@
-import type { LLMPurpose, ProviderName } from "./types.js";
+import type { LLMPurpose, ProviderName } from "./types";
 
 /**
  * Logs every LLM invocation to the `llm_calls` table.
  *
- * Failures here are logged to the console but never thrown — telemetry
+ * Failures here are logged to the console but never thrown -- telemetry
  * must not break the call. If Supabase env vars are missing (e.g. during
  * local smoke tests with no DB), the function is a no-op.
  */
@@ -28,7 +28,7 @@ export async function logLLMCall(input: LogCallInput): Promise<void> {
   ) {
     if (process.env.OPENCLAW_LLM_DEBUG === "1") {
       console.log(
-        `[llm] ${input.provider}/${input.model} ${input.duration_ms}ms (telemetry skipped — Supabase not configured)`
+        `[llm] ${input.provider}/${input.model} ${input.duration_ms}ms (telemetry skipped -- Supabase not configured)`
       );
     }
     return;

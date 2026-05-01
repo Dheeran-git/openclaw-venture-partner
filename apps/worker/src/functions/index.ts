@@ -1,1 +1,3 @@
-export const functions: never[] = [];
+import { healthcheck } from "./healthcheck";
+
+export const functions = [healthcheck];

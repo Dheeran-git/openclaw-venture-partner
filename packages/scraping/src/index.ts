@@ -1,1 +1,1 @@
-export type { Scraper, ScrapedLead } from "./types.js";
+export type { Scraper, ScrapedLead } from "./types";

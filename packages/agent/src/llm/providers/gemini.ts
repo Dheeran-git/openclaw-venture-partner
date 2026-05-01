@@ -5,7 +5,7 @@ import {
   type ProviderAdapter,
   type ProviderRequest,
   type LLMRawResponse,
-} from "../types.js";
+} from "../types";
 
 export const geminiProvider: ProviderAdapter = {
   name: "gemini",

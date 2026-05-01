@@ -4,7 +4,7 @@ import {
   type ProviderAdapter,
   type ProviderRequest,
   type LLMRawResponse,
-} from "../types.js";
+} from "../types";
 
 /**
  * GitHub Copilot chat-completions adapter.
@@ -12,7 +12,7 @@ import {
  * Uses the dummy GitHub OAuth token from $COPILOT_TOKEN. The endpoint is
  * OpenAI-compatible but requires Copilot-specific headers. CLAUDE.md
  * acknowledges this is a ToS-questionable workaround for the hackathon
- * only — production must use Anthropic direct.
+ * only -- production must use Anthropic direct.
  *
  * Token plug-in is deferred: the adapter ships shape-complete in Phase 1
  * and starts working as soon as COPILOT_TOKEN is set in .env.

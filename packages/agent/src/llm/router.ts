@@ -1,15 +1,15 @@
-import { copilotProvider } from "./providers/copilot.js";
-import { openrouterProvider } from "./providers/openrouter.js";
-import { geminiProvider } from "./providers/gemini.js";
-import { anthropicProvider } from "./providers/anthropic.js";
-import { LLMError, type ProviderAdapter, type ProviderName } from "./types.js";
+import { copilotProvider } from "./providers/copilot";
+import { openrouterProvider } from "./providers/openrouter";
+import { geminiProvider } from "./providers/gemini";
+import { anthropicProvider } from "./providers/anthropic";
+import { LLMError, type ProviderAdapter, type ProviderName } from "./types";
 
 /**
  * Provider order is locked per CLAUDE.md:
- *   Copilot → OpenRouter → Gemini → Anthropic
+ *   Copilot -> OpenRouter -> Gemini -> Anthropic
  *
  * Configuration check (`isConfigured`) is synchronous and cheap. If a remote
- * health check is added later, results are cached for 60s — see HEALTH_TTL_MS.
+ * health check is added later, results are cached for 60s -- see HEALTH_TTL_MS.
  */
 const PROVIDER_ORDER: ProviderAdapter[] = [
   copilotProvider,
@@ -61,7 +61,7 @@ export async function pickProvider(
   }
 
   throw new LLMError(
-    "no healthy LLM provider available — set at least one of " +
+    "no healthy LLM provider available -- set at least one of " +
       "COPILOT_TOKEN, OPENROUTER_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY",
     "router"
   );

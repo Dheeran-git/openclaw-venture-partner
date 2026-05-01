@@ -12,23 +12,21 @@
  */
 import { config as loadEnv } from "dotenv";
 import { z } from "zod";
-import { llm } from "../src/llm/client.js";
-import {
-  ALL_PROVIDERS,
-  getProviderByName,
-} from "../src/llm/router.js";
+import { llm } from "../src/llm/client";
+import { ALL_PROVIDERS, getProviderByName } from "../src/llm/router";
 import {
   LLM_PURPOSES,
   PROVIDER_NAMES,
   type ProviderName,
-} from "../src/llm/types.js";
+} from "../src/llm/types";
 
 loadEnv({ path: ".env" });
 loadEnv({ path: "../../.env" });
 
 const PROMPT = `Reply with strict JSON only: {"msg":"ok"}.`;
 const SCHEMA = z.object({ msg: z.string() });
-const USER_ID = process.env.DEMO_USER_ID ?? "00000000-0000-0000-0000-000000000001";
+const USER_ID =
+  process.env.DEMO_USER_ID ?? "00000000-0000-0000-0000-000000000001";
 
 type Outcome =
   | { kind: "skipped"; reason: string }
@@ -96,11 +94,11 @@ function fmt(name: string, outcome: Outcome): string {
   const pad = name.padEnd(14);
   switch (outcome.kind) {
     case "ok":
-      return `  ✔ ${pad}  ${outcome.ms}ms  ${outcome.model}`;
+      return `  [PASS] ${pad}  ${outcome.ms}ms  ${outcome.model}`;
     case "skipped":
-      return `  · ${pad}  skipped  (${outcome.reason})`;
+      return `  [SKIP] ${pad}  (${outcome.reason})`;
     case "fail":
-      return `  ✘ ${pad}  ${outcome.ms}ms  ${outcome.error}`;
+      return `  [FAIL] ${pad}  ${outcome.ms}ms  ${outcome.error}`;
   }
 }
 
@@ -111,13 +109,17 @@ async function main() {
     ?.split("=")[1] as ProviderName | undefined;
   const skipRouter = args.includes("--no-router");
 
-  const targets = onlyProvider ? [onlyProvider] : ALL_PROVIDERS.map((p) => p.name);
+  const targets = onlyProvider
+    ? [onlyProvider]
+    : ALL_PROVIDERS.map((p) => p.name);
 
-  console.log(`\nLLM smoke test — ${targets.join(", ")}\n`);
+  console.log(`\nLLM smoke test -- ${targets.join(", ")}\n`);
   console.log("provider configuration:");
   for (const name of PROVIDER_NAMES) {
     const adapter = getProviderByName(name);
-    console.log(`  ${name.padEnd(14)}  ${adapter.isConfigured() ? "configured" : "—"}`);
+    console.log(
+      `  ${name.padEnd(14)}  ${adapter.isConfigured() ? "configured" : "(no key)"}`
+    );
   }
   console.log("");
 
@@ -142,10 +144,9 @@ async function main() {
 
   const failed = Object.values(results).filter((o) => o.kind === "fail");
   const passed = Object.values(results).filter((o) => o.kind === "ok");
+  const skipped = Object.values(results).filter((o) => o.kind === "skipped");
   console.log(
-    `\n${passed.length} passed · ${failed.length} failed · ${
-      Object.values(results).filter((o) => o.kind === "skipped").length
-    } skipped\n`
+    `\n${passed.length} passed | ${failed.length} failed | ${skipped.length} skipped\n`
   );
 
   if (passed.length === 0) {

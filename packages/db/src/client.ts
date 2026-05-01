@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "./types.js";
+import type { Database } from "./types";
 
 export type DB = SupabaseClient<Database>;
 
@@ -22,7 +22,7 @@ export function createBrowserSupabaseClient(): DB {
 }
 
 /**
- * Server-only client. Uses the service role key — must never reach
+ * Server-only client. Uses the service role key -- must never reach
  * the browser bundle. Suitable for API routes, route handlers, and
  * background workers.
  */

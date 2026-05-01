@@ -4,7 +4,7 @@ import {
   type ProviderAdapter,
   type ProviderRequest,
   type LLMRawResponse,
-} from "../types.js";
+} from "../types";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 

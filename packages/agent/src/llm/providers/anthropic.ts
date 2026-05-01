@@ -5,7 +5,7 @@ import {
   type ProviderAdapter,
   type ProviderRequest,
   type LLMRawResponse,
-} from "../types.js";
+} from "../types";
 
 export const anthropicProvider: ProviderAdapter = {
   name: "anthropic",
@@ -30,7 +30,7 @@ export const anthropicProvider: ProviderAdapter = {
           {
             role: "user",
             content: req.json
-              ? `${req.prompt}\n\nRespond with valid JSON only — no markdown fences, no commentary.`
+              ? `${req.prompt}\n\nRespond with valid JSON only -- no markdown fences, no commentary.`
               : req.prompt,
           },
         ],

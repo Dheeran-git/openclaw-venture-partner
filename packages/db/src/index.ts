@@ -1,2 +1,2 @@
-export { createServerClient, createBrowserSupabaseClient } from "./client.js";
-export type { Database } from "./types.js";
+export { createServerClient, createBrowserSupabaseClient } from "./client";
+export type { Database } from "./types";

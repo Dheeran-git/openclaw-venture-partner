@@ -1,2 +1,2 @@
-export { env } from "./env.js";
-export { DEMO_USER_ID } from "./constants.js";
+export { env } from "./env";
+export { DEMO_USER_ID } from "./constants";

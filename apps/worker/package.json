@@ -12,7 +12,7 @@
     "@openclaw/agent": "workspace:*",
     "@openclaw/db": "workspace:*",
     "@openclaw/shared": "workspace:*",
-    "inngest": "3.27.4"
+    "inngest": "^3.34.0"
   },
   "devDependencies": {
     "tsx": "4.19.2",

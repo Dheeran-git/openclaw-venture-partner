@@ -13,7 +13,9 @@
       "@openclaw/agent": ["../../packages/agent/src/index.ts"],
       "@openclaw/agent/*": ["../../packages/agent/src/*"],
       "@openclaw/shared": ["../../packages/shared/src/index.ts"],
-      "@openclaw/shared/*": ["../../packages/shared/src/*"]
+      "@openclaw/shared/*": ["../../packages/shared/src/*"],
+      "@openclaw/worker": ["../worker/src/index.ts"],
+      "@openclaw/worker/*": ["../worker/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

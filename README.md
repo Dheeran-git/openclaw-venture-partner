@@ -23,7 +23,21 @@ openclaw-design-system/  Frozen design bundle from Claude Design — do not modi
 ```sh
 pnpm install
 cp .env.example .env   # then fill in keys you have
-pnpm dev               # boots apps/web
+pnpm dev               # boots apps/web on :3000
+```
+
+## Verifying the wire
+
+```sh
+# LLM client smoke test (per provider + router-selected)
+pnpm --filter @openclaw/agent smoke
+
+# Inngest registration: should report function_count >= 1, mode "dev"
+curl -s http://localhost:3000/api/inngest | jq
+
+# Inngest dev server (separate terminal, with apps/web also running)
+pnpm dlx inngest-cli@latest dev -u http://localhost:3000/api/inngest
+# UI: http://localhost:8288 — trigger system/healthcheck from there
 ```
 
 ## Build order
