@@ -1,0 +1,243 @@
+"use client";
+
+import { useState } from "react";
+import { ArrowUp, ArrowDown, ChevronRight } from "lucide-react";
+import {
+  SOURCE_DOT,
+  SOURCE_LABEL,
+  type LeadRow,
+  type LeadStatus,
+} from "../lib/fixtures";
+
+type SortKey = "score" | "title" | "age";
+
+export function LeadTable({
+  leads,
+  selectedId,
+  onSelect,
+}: {
+  leads: LeadRow[];
+  selectedId?: string;
+  onSelect: (id: string) => void;
+}) {
+  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const sorted = [...leads].sort((a, b) => {
+    const av = a[sortKey];
+    const bv = b[sortKey];
+    const cmp = av > bv ? 1 : av < bv ? -1 : 0;
+    return cmp * (sortDir === "asc" ? 1 : -1);
+  });
+
+  function toggleSort(col: SortKey) {
+    if (sortKey === col) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(col);
+      setSortDir("desc");
+    }
+  }
+
+  return (
+    <div className="oc-table">
+      <div className="oc-thead">
+        <div>
+          <input
+            type="checkbox"
+            className="oc-cb-input"
+            aria-label="Select all"
+          />
+        </div>
+        <SortHeader
+          col="score"
+          label="Score"
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onClick={() => toggleSort("score")}
+        />
+        <SortHeader
+          col="title"
+          label="Lead"
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onClick={() => toggleSort("title")}
+        />
+        <div className="oc-th">Source</div>
+        <div className="oc-th">Layer</div>
+        <SortHeader
+          col="age"
+          label="Age"
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onClick={() => toggleSort("age")}
+        />
+        <div className="oc-th">Status</div>
+        <div className="oc-th" aria-hidden />
+      </div>
+
+      <div className="oc-tbody">
+        {sorted.map((lead) => (
+          <button
+            type="button"
+            key={lead.id}
+            className={`oc-tr ${selectedId === lead.id ? "selected" : ""}`}
+            onClick={() => onSelect(lead.id)}
+          >
+            <span onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                className="oc-cb-input"
+                aria-label={`Select ${lead.id}`}
+              />
+            </span>
+            <span>
+              <ScoreBadge score={lead.score} />
+            </span>
+            <span className="oc-lead-title">
+              <span className="oc-lead-name">{lead.title}</span>
+              <span className="oc-lead-meta">
+                <span className="oc-mono">{lead.id}</span>
+                {" · "}
+                {lead.budget}
+              </span>
+            </span>
+            <span>
+              <SourceBadge source={lead.source} />
+            </span>
+            <span>
+              <LayerTag layer={lead.layer} />
+            </span>
+            <span className="oc-mono oc-meta">{lead.age} ago</span>
+            <span>
+              <StatusPill status={lead.status} />
+            </span>
+            <span aria-hidden>
+              <ChevronRight size={14} strokeWidth={1.5} />
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SortHeader({
+  col,
+  label,
+  sortKey,
+  sortDir,
+  onClick,
+}: {
+  col: SortKey;
+  label: string;
+  sortKey: SortKey;
+  sortDir: "asc" | "desc";
+  onClick: () => void;
+}) {
+  const active = sortKey === col;
+  return (
+    <button type="button" className="oc-th" onClick={onClick}>
+      {label}
+      {active &&
+        (sortDir === "asc" ? (
+          <ArrowUp size={10} strokeWidth={2.5} />
+        ) : (
+          <ArrowDown size={10} strokeWidth={2.5} />
+        ))}
+    </button>
+  );
+}
+
+function ScoreBadge({ score }: { score: number }) {
+  let bg = "#7A1F1F";
+  let fg = "#FFFFFF";
+  if (score >= 90) {
+    bg = "#10B981";
+    fg = "#053026";
+  } else if (score >= 80) {
+    bg = "#3FAE6A";
+    fg = "#062719";
+  } else if (score >= 70) {
+    bg = "#D6B82A";
+    fg = "#2A2400";
+  } else if (score >= 60) {
+    bg = "#A88F1F";
+    fg = "#1A1500";
+  } else if (score >= 1) {
+    bg = "#7A1F1F";
+    fg = "#FFFFFF";
+  } else {
+    bg = "#1E2538";
+    fg = "#8892AB";
+  }
+  return (
+    <span className="oc-score" style={{ background: bg, color: fg }}>
+      {score || "—"}
+    </span>
+  );
+}
+
+function LayerTag({ layer }: { layer: 1 | 2 | 3 }) {
+  const map = {
+    1: { c: "#8892AB", bg: "#0E1424", b: "#2A3350" },
+    2: { c: "#FF4D4D", bg: "rgba(255,77,77,0.10)", b: "rgba(255,77,77,0.30)" },
+    3: { c: "#00E5CC", bg: "rgba(0,229,204,0.10)", b: "rgba(0,229,204,0.30)" },
+  }[layer];
+  return (
+    <span
+      className="oc-tag"
+      style={{ color: map.c, background: map.bg, borderColor: map.b }}
+    >
+      L{layer}
+    </span>
+  );
+}
+
+const STATUS_MAP: Record<
+  LeadStatus,
+  { c: string; l: string; live?: boolean }
+> = {
+  "draft-ready": { c: "#10B981", l: "Draft ready" },
+  drafting: { c: "#00E5CC", l: "Drafting", live: true },
+  scouting: { c: "#00E5CC", l: "Scouting", live: true },
+  approved: { c: "#10B981", l: "Approved" },
+  sent: { c: "#10B981", l: "Sent" },
+  rejected: { c: "#EF4444", l: "Rejected" },
+  archived: { c: "#4A5268", l: "Archived" },
+  snoozed: { c: "#F59E0B", l: "Snoozed" },
+  pending: { c: "#3B82F6", l: "Pending" },
+};
+
+function StatusPill({ status }: { status: LeadStatus }) {
+  const m = STATUS_MAP[status];
+  return (
+    <span
+      className="oc-pill"
+      style={{
+        color: m.c,
+        background: m.c + "1A",
+        borderColor: m.c + "55",
+      }}
+    >
+      <span
+        className={`oc-dot ${m.live ? "pulse" : ""}`}
+        style={{ background: m.c }}
+      />
+      {m.l}
+    </span>
+  );
+}
+
+function SourceBadge({
+  source,
+}: {
+  source: keyof typeof SOURCE_LABEL;
+}) {
+  return (
+    <span className="oc-source">
+      <span className="oc-dot" style={{ background: SOURCE_DOT[source] }} />
+      {SOURCE_LABEL[source]}
+    </span>
+  );
+}

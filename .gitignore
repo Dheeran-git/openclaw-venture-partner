@@ -33,3 +33,7 @@ Thumbs.db
 next-env.d.ts
 .turbo/
 coverage/
+
+# Test artifacts
+.playwright-mcp/
+phase1-dashboard.png

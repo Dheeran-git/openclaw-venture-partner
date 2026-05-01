@@ -1,5 +1,10 @@
 @import "../styles/tokens.css";
+@import "../styles/dashboard.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Reset chrome that Tailwind 'base' might miss for our ported components. */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; padding: 0; }
