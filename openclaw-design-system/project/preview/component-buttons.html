@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Buttons</title>
+<link rel="stylesheet" href="_shell.css"/>
+<style>
+.btn { font-family: var(--font-sans); font-size: 14px; font-weight: 500; padding: 0 14px; height: 36px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 140ms cubic-bezier(0.22,0.61,0.36,1); }
+.btn-primary { background: #FF4D4D; color: #FFFFFF; }
+.btn-primary:hover { background: #FF6B6B; }
+.btn-secondary { background: #0E1424; color: #F0F4FF; border-color: #2A3350; }
+.btn-secondary:hover { background: #131A2C; }
+.btn-ghost { background: transparent; color: #F0F4FF; }
+.btn-ghost:hover { background: #131A2C; }
+.btn-destructive { background: transparent; color: #EF4444; border-color: rgba(239,68,68,0.40); }
+.btn-destructive:hover { background: rgba(239,68,68,0.10); }
+.btn:disabled, .disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.focused { box-shadow: 0 0 0 2px rgba(255,77,77,0.40); }
+.row-label { width:100px; font-family: var(--font-mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#8892AB }
+</style></head>
+<body>
+<div class="card">
+  <div class="label-meta">Buttons · 4 variants · all states</div>
+  <div style="display:flex;align-items:center;gap:12px"><div class="row-label">Primary</div>
+    <button class="btn btn-primary">Approve & send</button>
+    <button class="btn btn-primary" style="background:#FF6B6B">Hover</button>
+    <button class="btn btn-primary focused">Focused</button>
+    <button class="btn btn-primary" style="opacity:0.85">Pressed</button>
+    <button class="btn btn-primary disabled">Disabled</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px"><div class="row-label">Secondary</div>
+    <button class="btn btn-secondary">Save draft</button>
+    <button class="btn btn-secondary" style="background:#131A2C">Hover</button>
+    <button class="btn btn-secondary focused">Focused</button>
+    <button class="btn btn-secondary disabled">Disabled</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px"><div class="row-label">Ghost</div>
+    <button class="btn btn-ghost">Cancel</button>
+    <button class="btn btn-ghost" style="background:#131A2C">Hover</button>
+    <button class="btn btn-ghost focused">Focused</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px"><div class="row-label">Destructive</div>
+    <button class="btn btn-destructive">Reject lead</button>
+    <button class="btn btn-destructive" style="background:rgba(239,68,68,0.10)">Hover</button>
+    <button class="btn btn-destructive focused" style="box-shadow:0 0 0 2px rgba(239,68,68,0.40)">Focused</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px"><div class="row-label">Loading</div>
+    <button class="btn btn-primary" style="opacity:0.85">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2 a10 10 0 0 1 10 10" style="animation:spin 800ms linear infinite;transform-origin:center"/></svg>
+      Sending…
+    </button>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</div>
+</body></html>

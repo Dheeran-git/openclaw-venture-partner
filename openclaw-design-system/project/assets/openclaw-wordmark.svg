@@ -1,0 +1,15 @@
+<svg viewBox="0 0 360 80" xmlns="http://www.w3.org/2000/svg" aria-label="OpenClaw Venture Partner">
+  <g transform="translate(0,4)">
+    <path d="M40 8 C22 8 12 22 12 35 C12 47 22 60 32 63 L32 70 L38 70 L38 64 C38 64 41 65 44 64 L44 70 L50 70 L50 63 C60 60 70 47 70 35 C70 22 60 8 40 8Z" fill="#FF4D4D"></path>
+    <path d="M16 30 C6 27 3 33 6 40 C9 46 15 43 18 37 C20 32 19 30 16 30Z" fill="#FF4D4D"></path>
+    <path d="M64 30 C74 27 77 33 74 40 C71 46 65 43 62 37 C60 32 61 30 64 30Z" fill="#FF4D4D"></path>
+    <path d="M32 12 Q26 5 22 7" stroke="#FF4D4D" stroke-width="2" stroke-linecap="round" fill="none"></path>
+    <path d="M48 12 Q54 5 58 7" stroke="#FF4D4D" stroke-width="2" stroke-linecap="round" fill="none"></path>
+    <circle cx="31" cy="24" r="4" fill="#050810"></circle>
+    <circle cx="49" cy="24" r="4" fill="#050810"></circle>
+    <circle cx="32" cy="23.5" r="1.6" fill="#00E5CC"></circle>
+    <circle cx="50" cy="23.5" r="1.6" fill="#00E5CC"></circle>
+  </g>
+  <text x="92" y="46" font-family="Geist, Inter, sans-serif" font-size="28" font-weight="700" letter-spacing="-0.02em" fill="#F0F4FF">OpenClaw</text>
+  <text x="92" y="64" font-family="Geist Mono, ui-monospace, monospace" font-size="11" letter-spacing="0.12em" fill="#8892AB">VENTURE&amp;nbsp;PARTNER</text>
+</svg>

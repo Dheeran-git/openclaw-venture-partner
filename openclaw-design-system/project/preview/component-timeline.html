@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Activity timeline</title>
+<link rel="stylesheet" href="_shell.css"/>
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.tl{position:relative;padding-left:24px}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:1px;background:#1E2538}
+.ev{position:relative;padding:8px 0;font-size:13px;color:#F0F4FF}
+.ev::before{content:"";position:absolute;left:-21px;top:13px;width:8px;height:8px;border-radius:50%;background:#2A3350;border:2px solid #050810}
+.ev.live::before{background:#00E5CC;animation:pulse 1.4s ease-in-out infinite}
+.ev.ok::before{background:#10B981}
+.ev.warn::before{background:#F59E0B}
+.ev .meta{font-family:var(--font-mono);font-size:11px;color:#8892AB;margin-left:8px}
+</style></head>
+<body>
+<div class="card">
+  <div class="label-meta">Activity timeline · agent log</div>
+  <div class="tl">
+    <div class="ev live">Scouting Upwork <span class="meta">47 PROFILES · 0:03:12</span></div>
+    <div class="ev ok">Drafted pitch for Sara at Vercel <span class="meta">PITCH_A921 · 1m AGO</span></div>
+    <div class="ev ok">Built proof-of-value · pricing page rebuild <span class="meta">POV_044 · 4m AGO</span></div>
+    <div class="ev warn">LinkedIn rate-limited · retry in 4m <span class="meta">12m AGO</span></div>
+    <div class="ev">Scout run completed · 12 leads added <span class="meta">RUN_18:00 · 1h AGO</span></div>
+  </div>
+</div>
+</body></html>

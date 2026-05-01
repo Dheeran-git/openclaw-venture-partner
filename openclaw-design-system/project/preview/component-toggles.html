@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Toggles + checkbox</title>
+<link rel="stylesheet" href="_shell.css"/>
+<style>
+.toggle{width:32px;height:18px;border-radius:999px;background:#1E2538;position:relative;cursor:pointer;transition:background 140ms;border:1px solid #2A3350}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#8892AB;transition:all 140ms}
+.toggle.on{background:#FF4D4D;border-color:#FF4D4D}
+.toggle.on::after{left:16px;background:#FFFFFF}
+.cb{width:16px;height:16px;border-radius:4px;border:1px solid #2A3350;background:#0E1424;display:inline-grid;place-items:center}
+.cb.on{background:#FF4D4D;border-color:#FF4D4D}
+.row-r{display:flex;align-items:center;gap:12px;font-size:13px}
+</style></head>
+<body>
+<div class="card">
+  <div class="label-meta">Toggles · checkboxes · radios</div>
+  <div class="grid-3" style="gap:14px">
+    <div class="row-r"><div class="toggle"></div><span>Off</span></div>
+    <div class="row-r"><div class="toggle on"></div><span>On</span></div>
+    <div class="row-r" style="opacity:0.45"><div class="toggle on"></div><span>Disabled</span></div>
+  </div>
+  <div class="grid-3" style="gap:14px">
+    <div class="row-r"><div class="cb"></div><span>Unchecked</span></div>
+    <div class="row-r"><div class="cb on"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="m5 12 5 5L20 7"/></svg></div><span>Checked</span></div>
+    <div class="row-r"><div class="cb" style="background:rgba(255,77,77,0.20);border-color:#FF4D4D"><div style="width:8px;height:2px;background:#FF4D4D;border-radius:1px"></div></div><span>Indeterminate</span></div>
+  </div>
+  <div class="grid-3" style="gap:14px">
+    <div class="row-r"><div style="width:16px;height:16px;border-radius:50%;border:1px solid #2A3350"></div><span>Layer 1</span></div>
+    <div class="row-r"><div style="width:16px;height:16px;border-radius:50%;border:1px solid #FF4D4D;display:grid;place-items:center"><div style="width:8px;height:8px;border-radius:50%;background:#FF4D4D"></div></div><span>Layer 2</span></div>
+    <div class="row-r"><div style="width:16px;height:16px;border-radius:50%;border:1px solid #2A3350"></div><span>Layer 3</span></div>
+  </div>
+</div>
+</body></html>

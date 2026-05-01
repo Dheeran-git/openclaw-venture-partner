@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>OpenClaw Venture Partner — Dashboard</title>
+<link rel="icon" href="../../assets/openclaw-mark-flat.svg"/>
+<link rel="stylesheet" href="dashboard.css"/>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="data.js"></script>
+<script type="text/babel" src="Icons.jsx"></script>
+<script type="text/babel" src="Sidebar.jsx"></script>
+<script type="text/babel" src="Topbar.jsx"></script>
+<script type="text/babel" src="LeadTable.jsx"></script>
+<script type="text/babel" src="LeadDetail.jsx"></script>
+<script type="text/babel" src="ActivityRail.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+const App = () => {
+  const D = window.OC_DATA;
+  const [selectedId, setSelectedId] = useState("lead_8f3c");
+  const [sent, setSent] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [active, setActive] = useState("inbox");
+
+  const selected = D.leads.find((l) => l.id === selectedId);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleApprove = () => {
+    setSent(true);
+    showToast({ title: "Pitch sent to Sara at Vercel", body: "PITCH_A921 · " + new Date().toTimeString().slice(0,8) });
+  };
+  const handleReject = () => {
+    showToast({ title: "Pitch rejected. Drafting alternate.", body: "PITCH_A921 · DISCARDED" });
+  };
+  const handleRunScout = () => {
+    showToast({ title: "Scout queued", body: "RUN_" + new Date().toISOString().slice(0,16) + " · UPWORK + LINKEDIN" });
+  };
+
+  return (
+    <div className="oc-app" style={{gridTemplateColumns: selected ? "256px 1fr 420px" : "256px 1fr 320px"}}>
+      <Sidebar active={active} onNav={setActive}/>
+      <main className="oc-main">
+        <Topbar
+          title="Lead inbox"
+          subtitle={`${D.leads.length} leads · ${D.leads.filter(l=>l.status==="draft-ready").length} ready to review`}
+          onRunScout={handleRunScout}
+        />
+        <div className="oc-content">
+          <StatCards stats={D.stats}/>
+          <LeadTable leads={D.leads} selected={selectedId} onSelect={setSelectedId}/>
+        </div>
+      </main>
+      {selected ? (
+        <LeadDetail
+          lead={selected}
+          pitch={D.pitch}
+          sent={sent && selectedId === "lead_8f3c"}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          onClose={() => setSelectedId(null)}
+        />
+      ) : (
+        <ActivityRail events={D.activity}/>
+      )}
+      {toast && (
+        <div className="oc-toast-stack">
+          <div className="oc-toast">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <div><div className="t-title">{toast.title}</div><div className="t-body">{toast.body}</div></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("app")).render(<App/>);
+</script>
+</body>
+</html>

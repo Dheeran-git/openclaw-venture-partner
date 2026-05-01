@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Inputs</title>
+<link rel="stylesheet" href="_shell.css"/>
+<style>
+.field { display:flex; flex-direction:column; gap:6px; }
+.field label { font-size:12px; color:#8892AB; font-weight:500 }
+.input { background:#0E1424; border:1px solid #1E2538; border-radius:8px; height:36px; padding:0 12px; color:#F0F4FF; font-family:var(--font-sans); font-size:14px; outline:none; transition: border-color 140ms; width:100% }
+.input::placeholder { color:#4A5268 }
+.input:hover { border-color:#2A3350 }
+.input.focused { border-color:#FF4D4D; box-shadow:0 0 0 2px rgba(255,77,77,0.30) }
+.input.error { border-color:#EF4444 }
+.input.disabled { opacity:0.45 }
+.help { font-family:var(--font-mono); font-size:11px; color:#8892AB }
+.help.error { color:#EF4444 }
+</style></head>
+<body>
+<div class="card">
+  <div class="label-meta">Inputs · text · all states</div>
+  <div class="grid-2" style="gap:16px 20px">
+    <div class="field"><label>Default</label><input class="input" placeholder="Search by name, source, layer…"/></div>
+    <div class="field"><label>Filled</label><input class="input" value="senior react · vercel"/></div>
+    <div class="field"><label>Hover</label><input class="input" style="border-color:#2A3350" value="lead_8f3c"/></div>
+    <div class="field"><label>Focused</label><input class="input focused" value="Approve all matching leads"/></div>
+    <div class="field"><label>Error</label><input class="input error" value="invalid@@"/><span class="help error">Email format unrecognized.</span></div>
+    <div class="field"><label>Disabled</label><input class="input disabled" disabled value="Locked while run is active"/></div>
+  </div>
+  <div class="label-meta">Search · with leading icon</div>
+  <div style="position:relative;max-width:380px">
+    <svg style="position:absolute;left:12px;top:10px" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8892AB" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input class="input" style="padding-left:36px" placeholder="Search leads…"/>
+    <span style="position:absolute;right:10px;top:8px;font-family:var(--font-mono);font-size:11px;color:#4A5268;border:1px solid #2A3350;border-radius:4px;padding:1px 6px">⌘K</span>
+  </div>
+</div>
+</body></html>

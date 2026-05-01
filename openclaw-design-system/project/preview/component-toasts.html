@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Toasts</title>
+<link rel="stylesheet" href="_shell.css"/>
+<style>
+.toast{display:flex;gap:10px;align-items:flex-start;background:#0E1424;border:1px solid #1E2538;border-radius:8px;padding:12px 14px;width:100%;max-width:380px}
+.toast .ico{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+.t-title{font-size:13px;font-weight:500;color:#F0F4FF}
+.t-body{font-family:var(--font-mono);font-size:11px;color:#8892AB;margin-top:2px}
+</style></head>
+<body>
+<div class="card">
+  <div class="label-meta">Toasts · 4 variants</div>
+  <div class="toast" style="border-color:rgba(16,185,129,0.40)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><div><div class="t-title">Pitch sent to Sara at Vercel</div><div class="t-body">PITCH_A921 · 14:32:08</div></div></div>
+  <div class="toast" style="border-color:rgba(59,130,246,0.40)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div><div class="t-title">Scout run scheduled for 18:00</div><div class="t-body">RUN_2026-04-30T18:00 · UPWORK + LINKEDIN</div></div></div>
+  <div class="toast" style="border-color:rgba(245,158,11,0.40)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><div><div class="t-title">LinkedIn rate-limited. Retrying in 4m.</div><div class="t-body">SCOUT · 47/120 PROFILES CHECKED</div></div></div>
+  <div class="toast" style="border-color:rgba(239,68,68,0.40)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><div><div class="t-title">Pitch failed to send. Retry or open log.</div><div class="t-body">PITCH_A917 · SMTP REFUSED 451</div></div></div>
+</div>
+</body></html>

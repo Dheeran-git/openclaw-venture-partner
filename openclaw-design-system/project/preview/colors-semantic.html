@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Semantic colors</title>
+<link rel="stylesheet" href="_shell.css"/>
+</head>
+<body>
+<div class="card">
+  <div class="label-meta">Semantic · Status colors</div>
+  <div class="grid-4">
+    <div class="swatch" style="background:#10B981"><strong style="color:#053026">Success</strong><span class="hex" style="color:#053026">#10B981</span></div>
+    <div class="swatch" style="background:#F59E0B"><strong style="color:#3B2900">Warning</strong><span class="hex" style="color:#3B2900">#F59E0B</span></div>
+    <div class="swatch" style="background:#EF4444"><strong>Error</strong><span class="hex" style="color:#3D0F0F">#EF4444</span></div>
+    <div class="swatch" style="background:#3B82F6"><strong>Info</strong><span class="hex" style="color:#0B1F3D">#3B82F6</span></div>
+  </div>
+  <div class="grid-4">
+    <div style="background:rgba(16,185,129,0.10);border:1px solid rgba(16,185,129,0.30);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#10B981"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:#10B981;text-transform:uppercase;letter-spacing:0.08em">Approved</span>
+    </div>
+    <div style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.30);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#F59E0B"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:#F59E0B;text-transform:uppercase;letter-spacing:0.08em">Pending</span>
+    </div>
+    <div style="background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.30);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#EF4444"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:#EF4444;text-transform:uppercase;letter-spacing:0.08em">Failed</span>
+    </div>
+    <div style="background:rgba(59,130,246,0.10);border:1px solid rgba(59,130,246,0.30);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#3B82F6"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:#3B82F6;text-transform:uppercase;letter-spacing:0.08em">Draft</span>
+    </div>
+  </div>
+  <div style="font-size:13px;color:var(--fg-secondary);line-height:1.6">Error red is intentionally distinct from brand coral so destructive states never collide with primary CTA color. Tinted backgrounds use 10% alpha + 30% alpha border.</div>
+</div>
+</body></html>

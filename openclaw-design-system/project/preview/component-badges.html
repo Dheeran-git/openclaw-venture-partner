@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Badges</title>
+<link rel="stylesheet" href="_shell.css"/>
+<style>
+.tag{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;border:1px solid}
+.layer-1{color:#8892AB;background:#0E1424;border-color:#2A3350}
+.layer-2{color:#FF4D4D;background:rgba(255,77,77,0.10);border-color:rgba(255,77,77,0.30)}
+.layer-3{color:#00E5CC;background:rgba(0,229,204,0.10);border-color:rgba(0,229,204,0.30)}
+.src{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;background:#0E1424;border:1px solid #2A3350;font-family:var(--font-sans);font-size:12px;color:#F0F4FF}
+.src .dot{width:6px;height:6px;border-radius:50%}
+</style></head>
+<body>
+<div class="card">
+  <div class="label-meta">Layer badges · L1 / L2 / L3</div>
+  <div class="row" style="gap:8px">
+    <span class="tag layer-1">Layer 1</span>
+    <span class="tag layer-2">Layer 2</span>
+    <span class="tag layer-3">Layer 3</span>
+    <span style="font-size:12px;color:#8892AB;margin-left:8px">L1 cold list · L2 qualified · L3 ready-to-pitch</span>
+  </div>
+  <div class="label-meta">Source badges</div>
+  <div class="row" style="gap:8px">
+    <span class="src"><span class="dot" style="background:#14A800"></span>Upwork</span>
+    <span class="src"><span class="dot" style="background:#0A66C2"></span>LinkedIn</span>
+    <span class="src"><span class="dot" style="background:#F4B400"></span>Contra</span>
+    <span class="src"><span class="dot" style="background:#FF4500"></span>Reddit</span>
+    <span class="src"><span class="dot" style="background:#1DA1F2"></span>X / Twitter</span>
+    <span class="src"><span class="dot" style="background:#181717"></span>GitHub</span>
+  </div>
+</div>
+</body></html>
