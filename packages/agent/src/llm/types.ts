@@ -36,9 +36,9 @@ export const MODEL_MAP: Record<ProviderName, Record<ModelTier, string>> = {
     capable: "anthropic/claude-3.5-sonnet",
   },
   gemini: {
-    fast: "gemini-1.5-flash",
-    balanced: "gemini-1.5-flash",
-    capable: "gemini-1.5-pro",
+    fast: "gemini-2.5-flash-lite",
+    balanced: "gemini-2.5-flash",
+    capable: "gemini-2.5-pro",
   },
   anthropic: {
     fast: "claude-haiku-4-5-20251001",
