@@ -1,0 +1,22 @@
+{
+  "name": "openclaw",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OpenClaw Venture Partner monorepo",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm -r --filter ./apps/* --filter ./packages/* build",
+    "lint": "pnpm -r --filter ./apps/* --filter ./packages/* lint",
+    "typecheck": "pnpm -r --filter ./apps/* --filter ./packages/* typecheck",
+    "smoke:llm": "pnpm --filter @openclaw/agent smoke"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "@types/node": "20.16.10"
+  },
+  "packageManager": "pnpm@10.15.0"
+}

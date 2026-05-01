@@ -1,0 +1,6 @@
+{
+  "name": "@openclaw/agent-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OpenClaw runtime + custom skills for Telegram and other chat platforms"
+}

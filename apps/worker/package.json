@@ -1,0 +1,21 @@
+{
+  "name": "@openclaw/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@openclaw/agent": "workspace:*",
+    "@openclaw/db": "workspace:*",
+    "@openclaw/shared": "workspace:*",
+    "inngest": "3.27.4"
+  },
+  "devDependencies": {
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  }
+}
