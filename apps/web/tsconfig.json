@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./*"],
+      "@openclaw/db": ["../../packages/db/src/index.ts"],
+      "@openclaw/db/*": ["../../packages/db/src/*"],
+      "@openclaw/agent": ["../../packages/agent/src/index.ts"],
+      "@openclaw/agent/*": ["../../packages/agent/src/*"],
+      "@openclaw/shared": ["../../packages/shared/src/index.ts"],
+      "@openclaw/shared/*": ["../../packages/shared/src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
