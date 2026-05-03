@@ -16,18 +16,17 @@
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
     "jsx": "preserve",
-    "baseUrl": ".",
     "paths": {
-      "@openclaw/db": ["packages/db/src/index.ts"],
-      "@openclaw/db/*": ["packages/db/src/*"],
-      "@openclaw/agent": ["packages/agent/src/index.ts"],
-      "@openclaw/agent/*": ["packages/agent/src/*"],
-      "@openclaw/shared": ["packages/shared/src/index.ts"],
-      "@openclaw/shared/*": ["packages/shared/src/*"],
-      "@openclaw/scraping": ["packages/scraping/src/index.ts"],
-      "@openclaw/scraping/*": ["packages/scraping/src/*"],
-      "@openclaw/memory": ["packages/memory/src/index.ts"],
-      "@openclaw/memory/*": ["packages/memory/src/*"]
+      "@openclaw/db": ["./packages/db/src/index.ts"],
+      "@openclaw/db/*": ["./packages/db/src/*"],
+      "@openclaw/agent": ["./packages/agent/src/index.ts"],
+      "@openclaw/agent/*": ["./packages/agent/src/*"],
+      "@openclaw/shared": ["./packages/shared/src/index.ts"],
+      "@openclaw/shared/*": ["./packages/shared/src/*"],
+      "@openclaw/scraping": ["./packages/scraping/src/index.ts"],
+      "@openclaw/scraping/*": ["./packages/scraping/src/*"],
+      "@openclaw/memory": ["./packages/memory/src/index.ts"],
+      "@openclaw/memory/*": ["./packages/memory/src/*"]
     }
   }
 }
