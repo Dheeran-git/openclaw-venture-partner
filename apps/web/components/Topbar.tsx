@@ -1,16 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { Search, Bell } from "lucide-react";
 
 export function Topbar({
   title,
   subtitle,
+  defaultQuery = "react next.js",
   onRunScout,
+  running = false,
 }: {
   title: string;
   subtitle?: string;
-  onRunScout?: () => void;
+  defaultQuery?: string;
+  onRunScout?: (query: string) => void;
+  running?: boolean;
 }) {
+  const [query, setQuery] = useState(defaultQuery);
+  const trimmed = query.trim();
+  const canSubmit = !running && trimmed.length >= 2;
+
+  function submit() {
+    if (!canSubmit) return;
+    onRunScout?.(trimmed);
+  }
+
   return (
     <div className="oc-topbar">
       <div>
@@ -33,13 +47,27 @@ export function Topbar({
         >
           <Bell size={16} strokeWidth={1.5} />
         </button>
+        <input
+          className="oc-query"
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+          }}
+          placeholder="react next.js"
+          aria-label="Scout query"
+          spellCheck={false}
+          disabled={running}
+        />
         <button
           type="button"
           className="oc-btn oc-btn-primary"
-          onClick={onRunScout}
+          onClick={submit}
+          disabled={!canSubmit}
         >
           <Search size={14} strokeWidth={1.5} />
-          Run scout
+          {running ? "Running..." : "Run scout"}
         </button>
       </div>
     </div>

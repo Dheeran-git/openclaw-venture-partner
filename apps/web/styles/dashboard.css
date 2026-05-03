@@ -37,6 +37,13 @@
 .oc-search svg { color: var(--fg-secondary); }
 .oc-kbd { font-family: var(--font-mono); font-size: 11px; color: var(--fg-dim); border: 1px solid var(--border-emphasis); border-radius: 4px; padding: 1px 6px; }
 
+/* Scout query input -- monospace, distinct from the .oc-search box */
+.oc-query { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0 12px; height: 32px; width: 220px; font-family: var(--font-mono); font-size: 12px; color: var(--fg-primary); outline: none; transition: border-color 140ms; }
+.oc-query::placeholder { color: var(--fg-dim); }
+.oc-query:hover:not(:disabled) { border-color: var(--border-emphasis); }
+.oc-query:focus { border-color: var(--brand-coral); }
+.oc-query:disabled { opacity: 0.65; cursor: default; }
+
 /* Buttons */
 .oc-btn { font-family: var(--font-sans); font-size: 13px; font-weight: 500; padding: 0 12px; height: 32px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 140ms; }
 .oc-btn-primary { background: var(--brand-coral); color: #fff; }
