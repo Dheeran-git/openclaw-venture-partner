@@ -12,7 +12,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "smoke": "tsx scripts/llm-smoke.ts"
+    "smoke": "tsx scripts/llm-smoke.ts",
+    "score-smoke": "tsx scripts/score-smoke.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.32.1",
