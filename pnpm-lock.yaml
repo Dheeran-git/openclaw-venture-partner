@@ -148,7 +148,14 @@ importers:
         version: 5.6.3
 
   packages/scraping:
+    dependencies:
+      dotenv:
+        specifier: 16.4.5
+        version: 16.4.5
     devDependencies:
+      tsx:
+        specifier: 4.19.2
+        version: 4.19.2
       typescript:
         specifier: 5.6.3
         version: 5.6.3

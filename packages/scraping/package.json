@@ -9,9 +9,14 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "scrape-smoke": "tsx scripts/scrape-smoke.ts"
+  },
+  "dependencies": {
+    "dotenv": "16.4.5"
   },
   "devDependencies": {
+    "tsx": "4.19.2",
     "typescript": "5.6.3"
   }
 }
