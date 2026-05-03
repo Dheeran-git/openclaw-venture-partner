@@ -6,12 +6,15 @@
   "main": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "scout-dryrun": "tsx scripts/scout-dryrun.ts"
   },
   "dependencies": {
     "@openclaw/agent": "workspace:*",
     "@openclaw/db": "workspace:*",
+    "@openclaw/scraping": "workspace:*",
     "@openclaw/shared": "workspace:*",
+    "dotenv": "16.4.5",
     "inngest": "^3.34.0"
   },
   "devDependencies": {

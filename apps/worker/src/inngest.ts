@@ -15,4 +15,10 @@ export type Events = {
   "system/healthcheck": {
     data: { ping?: string };
   };
+  "scout/requested": {
+    data: { user_id: string; query: string; limit?: number };
+  };
+  "lead/scored": {
+    data: { lead_id: string; score: number };
+  };
 };

@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./llm": "./src/llm/client.ts",
-    "./llm/types": "./src/llm/types.ts"
+    "./llm/types": "./src/llm/types.ts",
+    "./scoring": "./src/scoring/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

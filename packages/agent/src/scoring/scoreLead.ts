@@ -1,3 +1,4 @@
+import type { ModelTier } from "../llm/types";
 import { llm } from "../llm/client";
 import { loadPrompt, renderPrompt } from "../llm/promptLoader";
 import { ScoreLeadOutput } from "./schema";
@@ -18,25 +19,36 @@ export interface ScoringProfile {
   bio: string;
 }
 
+export interface ScoreLeadResult extends ScoreLeadOutput {
+  /** Model tier requested for this scoring run, e.g. "balanced".
+   *  The actual concrete model id is captured in llm_calls telemetry. */
+  tier: ModelTier;
+  /** prompt_version recorded in scores rows for traceability. */
+  prompt_version: string;
+}
+
 export async function scoreLead(opts: {
   lead: ScoringLead;
   profile: ScoringProfile;
   userId: string;
-}): Promise<ScoreLeadOutput> {
+}): Promise<ScoreLeadResult> {
   const { meta, body } = await loadPrompt("score-lead");
+  const prompt_version = `score-lead@${meta.version}`;
 
   const prompt = renderPrompt(body, {
     profile_json: opts.profile,
     lead_json: opts.lead,
   });
 
-  return llm.complete({
+  const result = await llm.complete({
     user_id: opts.userId,
     purpose: "score_lead",
     prompt,
-    prompt_version: `score-lead@${meta.version}`,
+    prompt_version,
     schema: ScoreLeadOutput,
     model: meta.model,
     max_tokens: 1024,
   });
+
+  return { ...result, tier: meta.model, prompt_version };
 }
