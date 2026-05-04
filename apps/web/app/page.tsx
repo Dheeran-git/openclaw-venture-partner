@@ -91,7 +91,7 @@ export default function Page() {
 
   return (
     <div className="oc-app">
-      <Sidebar {...userMeta} />
+      <Sidebar {...userMeta} inboxCount={leadsQueued} pitchesCount={pitchesSent} />
       <main className="oc-main">
         <Topbar
           title="Lead Inbox"

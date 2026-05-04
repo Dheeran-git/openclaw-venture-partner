@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:isolation": "tsx tests/e2e/auth-isolation.ts"
+    "test:isolation": "tsx --env-file=../../.env tests/e2e/auth-isolation.ts"
   },
   "dependencies": {
     "@next/env": "^16.2.4",

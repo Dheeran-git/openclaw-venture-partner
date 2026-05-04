@@ -24,12 +24,14 @@ interface NavItem {
   future?: boolean;
 }
 
-const PRIMARY: NavItem[] = [
-  { id: "inbox", icon: Inbox, label: "Inbox", count: "12" },
-  { id: "scout", icon: Search, label: "Scout", count: "running", live: true, future: true },
-  { id: "pitches", icon: FileText, label: "Pitches", count: "42", future: true },
-  { id: "clients", icon: Users, label: "Clients", count: "8", future: true },
-];
+function buildPrimary(inboxCount: number, pitchesCount: number): NavItem[] {
+  return [
+    { id: "inbox", icon: Inbox, label: "Inbox", count: inboxCount > 0 ? String(inboxCount) : undefined },
+    { id: "scout", icon: Search, label: "Scout", count: "running", live: true, future: true },
+    { id: "pitches", icon: FileText, label: "Pitches", count: pitchesCount > 0 ? String(pitchesCount) : undefined, future: true },
+    { id: "clients", icon: Users, label: "Clients", future: true },
+  ];
+}
 
 const TOOLS: NavItem[] = [
   { id: "templates", icon: LayoutGrid, label: "Templates", future: true },
@@ -41,14 +43,19 @@ export function Sidebar({
   userInitials = "...",
   userName = "",
   userHandle = "",
+  inboxCount = 0,
+  pitchesCount = 0,
 }: {
   initialActive?: string;
   userInitials?: string;
   userName?: string;
   userHandle?: string;
+  inboxCount?: number;
+  pitchesCount?: number;
 }) {
   const [active, setActive] = useState(initialActive);
   const router = useRouter();
+  const primary = buildPrimary(inboxCount, pitchesCount);
 
   async function handleSignOut() {
     await getSupabaseBrowser().auth.signOut();
@@ -72,7 +79,7 @@ export function Sidebar({
       </div>
 
       <div className="oc-nav-section">
-        {PRIMARY.map((item) => (
+        {primary.map((item) => (
           <NavButton
             key={item.id}
             item={item}

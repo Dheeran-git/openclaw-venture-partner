@@ -31,12 +31,20 @@ export default function LoginPage() {
       if (err) setError(err.message);
       else setMagicSent(true);
     } else {
-      const { error: err } = await supabase.auth.signInWithPassword({
+      const { data, error: err } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (err) setError(err.message);
-      else router.push("/");
+      if (err) {
+        setError(err.message);
+      } else if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", data.user.id)
+          .single();
+        router.push(profile?.display_name ? "/" : "/onboarding");
+      }
     }
 
     setLoading(false);
