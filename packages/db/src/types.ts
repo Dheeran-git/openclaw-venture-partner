@@ -85,6 +85,7 @@ export interface Database {
           lead_id: string;
           score: number;
           reasoning: string | null;
+          signals: Json | null;
           prompt_version: string;
           model: string;
           created_at: string;

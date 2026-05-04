@@ -317,6 +317,7 @@ export async function runScoutPipeline(
         lead_id: r.lead_id,
         score: r.score,
         reasoning: r.reasoning,
+        signals: (r.signals ?? []) as Json,
         prompt_version: r.prompt_version,
         model: r.tier,
       })

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
 import { StatCards } from "../components/StatCards";
 import { LeadTable } from "../components/LeadTable";
 import { ActivityRail } from "../components/ActivityRail";
+import { LeadDetail } from "../components/LeadDetail";
 import { stats } from "../lib/fixtures";
 import { useLeads } from "../hooks/useLeads";
 import { useScoutActivity } from "../hooks/useScoutActivity";
@@ -15,6 +16,22 @@ export default function Page() {
   const [running, setRunning] = useState(false);
   const { leads, loading } = useLeads();
   const { events, pushOptimistic } = useScoutActivity();
+  const hasAutoSelected = useRef(false);
+
+  // Pre-select the highest-scored lead once leads first load.
+  useEffect(() => {
+    if (hasAutoSelected.current || leads.length === 0) return;
+    const best = leads.reduce<(typeof leads)[0] | null>((acc, l) => {
+      if (acc === null) return l;
+      if (l.score === null) return acc;
+      if (acc.score === null) return l;
+      return l.score > acc.score ? l : acc;
+    }, null);
+    if (best) {
+      setSelectedId(best.id);
+      hasAutoSelected.current = true;
+    }
+  }, [leads]);
 
   async function handleRunScout(query: string) {
     if (running) return;
@@ -67,7 +84,14 @@ export default function Page() {
           />
         </div>
       </main>
-      <ActivityRail events={events} />
+      {selectedId ? (
+        <LeadDetail
+          leadId={selectedId}
+          onClose={() => setSelectedId(undefined)}
+        />
+      ) : (
+        <ActivityRail events={events} />
+      )}
     </div>
   );
 }
