@@ -32,18 +32,21 @@ export function Topbar({
         {subtitle && <div className="oc-h1-sub">{subtitle}</div>}
       </div>
       <div className="oc-topbar-actions">
-        <div className="oc-search">
+        <div className="oc-search" style={{ opacity: 0.45, pointerEvents: "none", cursor: "default" }}>
           <Search size={14} strokeWidth={1.5} />
           <input
             placeholder="Search leads, clients, pitches"
             aria-label="Search"
+            readOnly
+            tabIndex={-1}
           />
-          <span className="oc-kbd">{"⌘"}K</span>
         </div>
         <button
           type="button"
           className="oc-btn oc-btn-ghost"
           aria-label="Notifications"
+          style={{ opacity: 0.45, pointerEvents: "none" }}
+          tabIndex={-1}
         >
           <Bell size={16} strokeWidth={1.5} />
         </button>

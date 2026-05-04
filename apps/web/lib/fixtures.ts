@@ -53,12 +53,6 @@ export interface ActivityEvent {
   meta: string;
 }
 
-export const stats: StatCard[] = [
-  { label: "Leads queued", value: "128", delta: "+18% w/w", deltaPositive: true },
-  { label: "Pitches sent", value: "42", sub: "11 awaiting reply" },
-  { label: "Reply rate", value: "31%", delta: "-4% w/w", deltaPositive: false },
-  { label: "Hours saved", value: "26.4", sub: "vs manual prospecting", accent: true },
-];
 
 export const SOURCE_LABEL: Record<LeadSource, string> = {
   upwork: "Upwork",

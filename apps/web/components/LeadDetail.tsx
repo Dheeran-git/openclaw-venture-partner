@@ -78,14 +78,8 @@ export function LeadDetail({
             padding: "16px 20px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 16,
-              marginBottom: score?.signals?.length ? 12 : 0,
-            }}
-          >
+          {/* Score number on its own line */}
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 10 }}>
             <span
               className="oc-mono"
               style={{
@@ -93,34 +87,31 @@ export function LeadDetail({
                 fontWeight: 700,
                 lineHeight: 1,
                 color: scoreColor(score?.score ?? null),
-                flexShrink: 0,
               }}
             >
               {score?.score ?? "—"}
             </span>
-            <p
-              style={{
-                fontSize: 13,
-                color: score
-                  ? "var(--fg-primary)"
-                  : "var(--fg-secondary)",
-                lineHeight: 1.65,
-                flex: 1,
-                margin: 0,
-              }}
-            >
-              {score?.reasoning ?? "Score is being computed..."}
-            </p>
+            <span className="oc-mono oc-meta" style={{ fontSize: 11 }}>/ 100</span>
           </div>
+          {/* Reasoning paragraph */}
+          <p
+            style={{
+              fontSize: 13,
+              color: score ? "var(--fg-primary)" : "var(--fg-secondary)",
+              lineHeight: 1.65,
+              margin: 0,
+              paddingBottom: score?.signals?.length ? 12 : 0,
+              borderBottom: score?.signals?.length
+                ? "1px solid var(--border-subtle)"
+                : "none",
+            }}
+          >
+            {score?.reasoning ?? "Score is being computed..."}
+          </p>
+          {/* Signals pills */}
           {score?.signals && score.signals.length > 0 && (
             <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 6,
-                paddingTop: 12,
-                borderTop: "1px solid var(--border-subtle)",
-              }}
+              style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingTop: 12 }}
             >
               {score.signals.map((sig) => (
                 <span
@@ -179,20 +170,26 @@ export function LeadDetail({
               href={normalized.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="oc-mono"
               style={{
-                fontSize: 11,
-                color: "var(--brand-coral)",
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
                 gap: 4,
+                color: "var(--brand-coral)",
                 overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
               }}
             >
-              <ExternalLink size={11} strokeWidth={1.5} />
-              {normalized.source_url}
+              <ExternalLink size={11} strokeWidth={1.5} style={{ flexShrink: 0 }} />
+              <span
+                className="oc-mono"
+                style={{
+                  fontSize: 11,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {normalized.source_url}
+              </span>
             </a>
           </div>
           {normalized.budget_text && (

@@ -7,15 +7,24 @@ import { StatCards } from "../components/StatCards";
 import { LeadTable } from "../components/LeadTable";
 import { ActivityRail } from "../components/ActivityRail";
 import { LeadDetail } from "../components/LeadDetail";
-import { stats } from "../lib/fixtures";
+import type { StatCard } from "../lib/fixtures";
 import { useLeads } from "../hooks/useLeads";
 import { useScoutActivity } from "../hooks/useScoutActivity";
+import { useStats } from "../hooks/useStats";
 
 export default function Page() {
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [running, setRunning] = useState(false);
   const { leads, loading } = useLeads();
   const { events, pushOptimistic } = useScoutActivity();
+  const { leadsQueued, pitchesSent } = useStats();
+
+  const liveStats: StatCard[] = [
+    { label: "Leads queued", value: String(leadsQueued) },
+    { label: "Pitches sent", value: String(pitchesSent) },
+    { label: "Reply rate", value: "—" },
+    { label: "Hours saved", value: "—", accent: true },
+  ];
   const hasAutoSelected = useRef(false);
 
   // Pre-select the highest-scored lead once leads first load.
@@ -76,7 +85,7 @@ export default function Page() {
           running={running}
         />
         <div className="oc-content">
-          <StatCards stats={stats} />
+          <StatCards stats={liveStats} />
           <LeadTable
             leads={leads}
             selectedId={selectedId}

@@ -18,18 +18,19 @@ interface NavItem {
   label: string;
   count?: string;
   live?: boolean;
+  future?: boolean;
 }
 
 const PRIMARY: NavItem[] = [
   { id: "inbox", icon: Inbox, label: "Inbox", count: "12" },
-  { id: "scout", icon: Search, label: "Scout", count: "running", live: true },
-  { id: "pitches", icon: FileText, label: "Pitches", count: "42" },
-  { id: "clients", icon: Users, label: "Clients", count: "8" },
+  { id: "scout", icon: Search, label: "Scout", count: "running", live: true, future: true },
+  { id: "pitches", icon: FileText, label: "Pitches", count: "42", future: true },
+  { id: "clients", icon: Users, label: "Clients", count: "8", future: true },
 ];
 
 const TOOLS: NavItem[] = [
-  { id: "templates", icon: LayoutGrid, label: "Templates" },
-  { id: "settings", icon: Settings, label: "Settings" },
+  { id: "templates", icon: LayoutGrid, label: "Templates", future: true },
+  { id: "settings", icon: Settings, label: "Settings", future: true },
 ];
 
 export function Sidebar({
@@ -108,8 +109,8 @@ function NavButton({
   return (
     <button
       type="button"
-      className={`oc-nav-item ${active ? "active" : ""}`}
-      onClick={onClick}
+      className={`oc-nav-item ${active ? "active" : ""} ${item.future ? "future" : ""}`}
+      onClick={item.future ? undefined : onClick}
     >
       <Icon size={16} strokeWidth={1.5} />
       <span>{item.label}</span>
