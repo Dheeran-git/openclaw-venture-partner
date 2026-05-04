@@ -4,7 +4,7 @@
  * flags -- and prints what the LLM returned. Verifies an llm_calls
  * row lands per call (telemetry path is exercised by llm.complete).
  *
- *   pnpm --filter @openclaw/agent score-smoke
+ *   pnpm --filter @openclaw/agent score-smoke --user-id=<uuid>
  */
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env" });
@@ -16,8 +16,12 @@ import {
   type ScoringProfile,
 } from "../src/scoring";
 
-const USER_ID =
-  process.env.DEMO_USER_ID ?? "00000000-0000-0000-0000-000000000001";
+const userIdArg = process.argv.slice(2).find((a) => a.startsWith("--user-id="))?.split("=")[1];
+if (!userIdArg) {
+  console.error("Error: --user-id=<uuid> is required");
+  process.exit(1);
+}
+const USER_ID = userIdArg;
 
 const profile: ScoringProfile = {
   display_name: "Anya Petrov",

@@ -9,8 +9,11 @@ import {
   Users,
   LayoutGrid,
   Settings,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
+import { getSupabaseBrowser } from "../lib/supabaseBrowser";
+import { useRouter } from "next/navigation";
 
 interface NavItem {
   id: string;
@@ -35,9 +38,9 @@ const TOOLS: NavItem[] = [
 
 export function Sidebar({
   initialActive = "inbox",
-  userInitials = "AP",
-  userName = "Anya Petrov",
-  userHandle = "freelance.anya",
+  userInitials = "...",
+  userName = "",
+  userHandle = "",
 }: {
   initialActive?: string;
   userInitials?: string;
@@ -45,6 +48,12 @@ export function Sidebar({
   userHandle?: string;
 }) {
   const [active, setActive] = useState(initialActive);
+  const router = useRouter();
+
+  async function handleSignOut() {
+    await getSupabaseBrowser().auth.signOut();
+    router.push("/auth/login");
+  }
 
   return (
     <aside className="oc-sidebar">
@@ -87,10 +96,18 @@ export function Sidebar({
 
       <div className="oc-sidebar-foot">
         <div className="oc-avatar">{userInitials}</div>
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="oc-foot-text-name">{userName}</div>
-          <div className="oc-foot-text-handle">{userHandle}</div>
+          <div className="oc-foot-text-handle truncate">{userHandle}</div>
         </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          title="Sign out"
+          className="oc-btn oc-btn-ghost p-1 h-auto text-fg-dim hover:text-fg-secondary"
+        >
+          <LogOut size={14} />
+        </button>
       </div>
     </aside>
   );

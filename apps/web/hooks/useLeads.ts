@@ -23,7 +23,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEMO_USER_ID } from "@openclaw/shared";
 import type { NormalizedLead } from "@openclaw/shared";
 import { getSupabaseBrowser } from "../lib/supabaseBrowser";
 import {
@@ -76,11 +75,12 @@ export interface UseLeadsResult {
   loading: boolean;
 }
 
-export function useLeads(): UseLeadsResult {
+export function useLeads(userId?: string): UseLeadsResult {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!userId) return;
     let cancelled = false;
     const supabase = getSupabaseBrowser();
     let cleanup: (() => void) | null = null;
@@ -92,7 +92,6 @@ export function useLeads(): UseLeadsResult {
         .select(
           `id, user_id, layer, normalized, scraped_at, scores (score, reasoning, created_at)`
         )
-        .eq("user_id", DEMO_USER_ID)
         .order("scraped_at", { ascending: false })
         .limit(INITIAL_LIMIT);
 
@@ -140,7 +139,7 @@ export function useLeads(): UseLeadsResult {
             event: "INSERT",
             schema: "public",
             table: "leads",
-            filter: `user_id=eq.${DEMO_USER_ID}`,
+            filter: `user_id=eq.${userId}`,
           },
           (payload) => {
             const row = payload.new as {
@@ -200,7 +199,7 @@ export function useLeads(): UseLeadsResult {
       cancelled = true;
       if (cleanup) cleanup();
     };
-  }, []);
+  }, [userId]);
 
   return { leads, loading };
 }

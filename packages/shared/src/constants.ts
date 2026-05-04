@@ -1,2 +1,1 @@
-export const DEMO_USER_ID =
-  process.env.DEMO_USER_ID ?? "00000000-0000-0000-0000-000000000001";
+// Shared constants. DEMO_USER_ID removed in Phase 2.5 (auth + RLS cutover).

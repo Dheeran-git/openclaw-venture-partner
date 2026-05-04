@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient as ssrCreateBrowserClient } from "@supabase/ssr";
 import type { Database } from "./types";
 
 export type DB = SupabaseClient<Database>;
@@ -10,16 +11,16 @@ export type DB = SupabaseClient<Database>;
  * panes -- pasting that into NEXT_PUBLIC_SUPABASE_URL produces a doubled
  * /rest/v1/rest/v1/ path. Strip both forms defensively.
  */
-function normalizeSupabaseUrl(raw: string): string {
+export function normalizeSupabaseUrl(raw: string): string {
   return raw
     .replace(/\/+$/, "")
     .replace(/\/(rest|auth|storage|realtime)\/v1$/i, "");
 }
 
 /**
- * Browser-safe client. Uses the public anon key; never receives the
- * service role. Read access only beyond what RLS would allow once
- * policies are wired up post-hackathon.
+ * Browser-safe client using @supabase/ssr so auth state is stored in
+ * cookies (not just localStorage), enabling the server to read the
+ * session via middleware and Server Components without an extra round-trip.
  */
 export function createBrowserSupabaseClient(): DB {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,17 +30,15 @@ export function createBrowserSupabaseClient(): DB {
       "NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set"
     );
   }
-  return createClient<Database>(normalizeSupabaseUrl(url), key, {
-    auth: { persistSession: false },
-  });
+  return ssrCreateBrowserClient<Database>(normalizeSupabaseUrl(url), key);
 }
 
 /**
- * Server-only client. Uses the service role key -- must never reach
- * the browser bundle. Suitable for API routes, route handlers, and
- * background workers.
+ * Service-role client. Bypasses RLS entirely — must never reach the
+ * browser bundle. Use for Inngest workers, MCP tool handlers, and
+ * server-side telemetry that needs full table access.
  */
-export function createServerClient(): DB {
+export function createServiceRoleClient(): DB {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {

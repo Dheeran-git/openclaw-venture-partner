@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { inngest } from "@openclaw/worker";
-import { DEMO_USER_ID } from "@openclaw/shared";
+import { getSession } from "../../../lib/supabaseServer";
 
 const ScoutBody = z.object({
   query: z.string().trim().min(2).max(120),
@@ -8,6 +8,11 @@ const ScoutBody = z.object({
 });
 
 export async function POST(req: Request) {
+  const session = await getSession();
+  if (!session) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -37,7 +42,7 @@ export async function POST(req: Request) {
     await inngest.send({
       name: "scout/requested",
       data: {
-        user_id: DEMO_USER_ID,
+        user_id: session.user.id,
         query: parsed.data.query,
         ...(parsed.data.limit !== undefined && { limit: parsed.data.limit }),
       },

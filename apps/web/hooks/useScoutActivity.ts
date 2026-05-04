@@ -14,7 +14,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { DEMO_USER_ID } from "@openclaw/shared";
 import { getSupabaseBrowser } from "../lib/supabaseBrowser";
 import type { ActivityEvent } from "../lib/fixtures";
 
@@ -32,7 +31,7 @@ export interface UseScoutActivityResult {
   pushOptimistic: (event: ActivityEvent) => void;
 }
 
-export function useScoutActivity(): UseScoutActivityResult {
+export function useScoutActivity(userId?: string): UseScoutActivityResult {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
 
   const pushOptimistic = useCallback((event: ActivityEvent) => {
@@ -40,9 +39,10 @@ export function useScoutActivity(): UseScoutActivityResult {
   }, []);
 
   useEffect(() => {
+    if (!userId) return;
     const supabase = getSupabaseBrowser();
     const channel = supabase
-      .channel(`scout:${DEMO_USER_ID}`)
+      .channel(`scout:${userId}`)
       .on(
         "broadcast",
         { event: "progress" },
@@ -61,7 +61,7 @@ export function useScoutActivity(): UseScoutActivityResult {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [userId]);
 
   return { events, pushOptimistic };
 }

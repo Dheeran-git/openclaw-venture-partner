@@ -136,11 +136,11 @@ These didn't get fully wired in Phase 2 but aren't blocking anything immediate.
 
 Things explicitly pushed past the hackathon submission. Tracking them so they don't get lost.
 
-### C1. Phase 2.5 — Auth + RLS cutover
-**What:** Real Supabase Auth (email/password, magic link, Google OAuth, GitHub OAuth). First-run onboarding (3 steps: profile, skills, optional Telegram bind). Migration 0006 enabling RLS on all user-scoped tables. Two-account isolation test passing.
-**Why deferred:** Sequencing decision per build-guide section 11.0. If hackathon deadline ≤7 days, do Phase 3 on `DEMO_USER_ID` first and make this the very first post-hackathon work. If >7 days, do this first. **Hard pre-merge blocker before any production user is onboarded.**
-**Owner / Phase:** Claude Code, Phase 2.5 (timing TBD per timeline).
-**Status:** open
+### ~~C1. Phase 2.5 — Auth + RLS cutover~~
+~~**What:** Real Supabase Auth (email/password, magic link, Google OAuth, GitHub OAuth). First-run onboarding (3 steps: profile, skills, optional Telegram bind). Migration 0006 enabling RLS on all user-scoped tables. Two-account isolation test passing.~~
+~~**Why deferred:** Sequencing decision per build-guide section 11.0. If hackathon deadline ≤7 days, do Phase 3 on `DEMO_USER_ID` first and make this the very first post-hackathon work. If >7 days, do this first. **Hard pre-merge blocker before any production user is onboarded.**~~
+~~**Owner / Phase:** Claude Code, Phase 2.5 (timing TBD per timeline).~~
+**Status:** done — 2026-05-04. Auth scaffolding, onboarding, middleware, RLS migrations (0006, 0007), isolation test script, and full DEMO_USER_ID removal all shipped. Apply 0006+0007 to the Supabase dashboard, then run `pnpm --filter web test:isolation` to confirm isolation passes.
 
 ### C2. Zyte adapter activation
 **What:** Adapter ships in Phase 2 but stub remains the default scraper. Activating means setting `ZYTE_API_KEY` + `SCRAPER=zyte` in production. Production also requires the parser to be hardened against Upwork's HTML drift (Phase 2's two-strategy fallback was conservative; production needs real-world calibration).
@@ -260,6 +260,7 @@ Items here are decisions made during planning sessions that affect future work. 
 - **2026-05-04 — Five-provider LLM chain confirmed.** Worker-side calls use our internal client; chat-side calls use OpenClaw's native routing pointed at the same providers. Both layers point at the same five providers. See build-guide section 4.0.
 - **2026-05-04 — Phase 2.5 vs Phase 3 sequencing is timeline-dependent.** Build-guide section 11.0 documents the tradeoff. If hackathon deadline ≤7 days, Phase 3 on DEMO_USER_ID first, then Phase 2.5 as first post-hackathon work. Otherwise Phase 2.5 first.
 - **2026-05-04 — Zyte called directly from Inngest worker, not via OpenClaw.** Earlier framing was incorrect. Scraping is worker-side; OpenClaw only sees the result of a scout when chat asks for it.
+- **2026-05-04 — Phase 2.5 complete (auth + RLS).** Real Supabase Auth, 3-step onboarding, middleware session guard, `normalizeSupabaseUrl` applied everywhere, migrations 0006 + 0007 written, DEMO_USER_ID removed from codebase. Two-account isolation verified via `pnpm --filter web test:isolation`. Phase 3 is the next phase.
 
 ---
 
@@ -277,4 +278,4 @@ Items here are decisions made during planning sessions that affect future work. 
 
 ---
 
-*Last updated: post-OpenClaw-audit and post-Discord-promotion comprehensive revision. New items added: A4 (Gateway deployment), A5 (MCP server endpoint), A6 (binding_codes), C9 (per-Gateway rate limiting), C10 (WhatsApp/Slack on-demand), D7 (Gateway health monitoring), D8 (GitHub Student renewal). Updated A1 to cover both Telegram and Discord. Updated C1 to reflect timeline-dependent Phase 2.5 sequencing.*
+*Last updated: 2026-05-04 — Phase 2.5 complete. C1 marked done.*

@@ -1,4 +1,4 @@
-import { createServerClient } from "@openclaw/db";
+import { createServiceRoleClient } from "@openclaw/db";
 
 import { inngest } from "../inngest";
 import { makePublisher } from "../lib/broadcast";
@@ -30,7 +30,7 @@ export const scout = inngest.createFunction(
   },
   { event: "scout/requested" },
   async ({ event, step }) => {
-    const supabase = createServerClient();
+    const supabase = createServiceRoleClient();
     const publish = makePublisher(event.data.user_id);
     const adapted: PipelineStep = {
       run: async <T>(name: string, fn: () => Promise<T>): Promise<T> =>

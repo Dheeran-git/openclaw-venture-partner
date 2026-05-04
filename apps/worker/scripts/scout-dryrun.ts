@@ -10,25 +10,32 @@
  *   pnpm --filter @openclaw/worker scout-dryrun
  *   pnpm --filter @openclaw/worker scout-dryrun "wordpress" 5
  *
- * The user_id defaults to DEMO_USER_ID.
+ * Pass --user-id=<uuid> to scope the run to a real auth user.
+ *
+ *   pnpm --filter @openclaw/worker scout-dryrun --user-id=<uuid>
+ *   pnpm --filter @openclaw/worker scout-dryrun --user-id=<uuid> "wordpress" 5
  */
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env" });
 loadEnv({ path: "../../.env" });
 
-import { createServerClient } from "@openclaw/db";
+import { createServiceRoleClient } from "@openclaw/db";
 import type { ProgressKind } from "../src/lib/broadcast";
 import {
   runScoutPipeline,
   type PipelineStep,
 } from "../src/lib/scoutPipeline";
 
-const USER_ID =
-  process.env.DEMO_USER_ID ?? "00000000-0000-0000-0000-000000000001";
-
 const args = process.argv.slice(2);
-const query = args[0] ?? "react next.js";
-const limit = Number(args[1] ?? 10);
+const userIdArg = args.find((a) => a.startsWith("--user-id="))?.split("=")[1];
+if (!userIdArg) {
+  console.error("Error: --user-id=<uuid> is required");
+  process.exit(1);
+}
+const USER_ID = userIdArg;
+const positional = args.filter((a) => !a.startsWith("--"));
+const query = positional[0] ?? "react next.js";
+const limit = Number(positional[1] ?? 10);
 
 const fakeStep: PipelineStep = {
   async run(name, fn) {
@@ -58,7 +65,7 @@ async function fakePublish(
 async function main() {
   console.log(`\nscout-dryrun  query="${query}"  limit=${limit}  user=${USER_ID}\n`);
 
-  const supabase = createServerClient();
+  const supabase = createServiceRoleClient();
   const result = await runScoutPipeline(fakeStep, supabase, fakePublish, {
     user_id: USER_ID,
     query,

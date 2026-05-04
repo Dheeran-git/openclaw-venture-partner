@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEMO_USER_ID } from "@openclaw/shared";
 import { getSupabaseBrowser } from "../lib/supabaseBrowser";
 
 interface Stats {
@@ -15,12 +14,10 @@ async function fetchCounts(
   const [leadsRes, pitchesRes] = await Promise.all([
     supabase
       .from("leads")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", DEMO_USER_ID),
+      .select("id", { count: "exact", head: true }),
     supabase
       .from("pitches")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", DEMO_USER_ID)
       .eq("status", "sent"),
   ]);
   return {
@@ -29,10 +26,11 @@ async function fetchCounts(
   };
 }
 
-export function useStats() {
+export function useStats(userId?: string) {
   const [stats, setStats] = useState<Stats>({ leadsQueued: 0, pitchesSent: 0 });
 
   useEffect(() => {
+    if (!userId) return;
     const supabase = getSupabaseBrowser();
 
     fetchCounts(supabase).then(setStats).catch(console.error);
@@ -41,17 +39,17 @@ export function useStats() {
       .channel("stats-watch")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "leads", filter: `user_id=eq.${DEMO_USER_ID}` },
+        { event: "INSERT", schema: "public", table: "leads", filter: `user_id=eq.${userId}` },
         () => fetchCounts(supabase).then(setStats).catch(console.error)
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "pitches", filter: `user_id=eq.${DEMO_USER_ID}` },
+        { event: "INSERT", schema: "public", table: "pitches", filter: `user_id=eq.${userId}` },
         () => fetchCounts(supabase).then(setStats).catch(console.error)
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "pitches", filter: `user_id=eq.${DEMO_USER_ID}` },
+        { event: "UPDATE", schema: "public", table: "pitches", filter: `user_id=eq.${userId}` },
         () => fetchCounts(supabase).then(setStats).catch(console.error)
       )
       .subscribe();
@@ -59,7 +57,7 @@ export function useStats() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [userId]);
 
   return stats;
 }

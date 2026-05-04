@@ -5,8 +5,6 @@ const schema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
 
-  DEMO_USER_ID: z.string().uuid().default("00000000-0000-0000-0000-000000000001"),
-
   COPILOT_TOKEN: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),

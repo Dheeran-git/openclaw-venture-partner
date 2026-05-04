@@ -11,13 +11,15 @@ import type { StatCard } from "../lib/fixtures";
 import { useLeads } from "../hooks/useLeads";
 import { useScoutActivity } from "../hooks/useScoutActivity";
 import { useStats } from "../hooks/useStats";
+import { useSession } from "../lib/auth";
 
 export default function Page() {
+  const session = useSession();
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [running, setRunning] = useState(false);
-  const { leads, loading } = useLeads();
-  const { events, pushOptimistic } = useScoutActivity();
-  const { leadsQueued, pitchesSent } = useStats();
+  const { leads, loading } = useLeads(session?.user.id);
+  const { events, pushOptimistic } = useScoutActivity(session?.user.id);
+  const { leadsQueued, pitchesSent } = useStats(session?.user.id);
 
   const liveStats: StatCard[] = [
     { label: "Leads queued", value: String(leadsQueued) },
@@ -74,9 +76,22 @@ export default function Page() {
     ? "Loading leads..."
     : `${leads.length} leads queued · sorted by score`;
 
+  const userMeta = session?.user
+    ? {
+        userName: session.user.user_metadata?.full_name as string | undefined
+          ?? session.user.email?.split("@")[0]
+          ?? "You",
+        userHandle: session.user.email ?? "",
+        userInitials: (
+          session.user.user_metadata?.full_name as string | undefined
+            ?? session.user.email ?? "?"
+        ).slice(0, 2).toUpperCase(),
+      }
+    : undefined;
+
   return (
     <div className="oc-app">
-      <Sidebar />
+      <Sidebar {...userMeta} />
       <main className="oc-main">
         <Topbar
           title="Lead Inbox"

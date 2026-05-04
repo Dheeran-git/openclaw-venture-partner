@@ -25,8 +25,8 @@ Read it at the start of every session. When this file and the build guide disagr
 
 - **Phase 1 (Foundations):** complete.
 - **Phase 2 (Scout pipeline):** complete.
-- **Phase 2.5 (Auth + RLS) vs Phase 3 (HITL approval):** see section 11.0 of the build guide for the sequencing decision. Both are valid; depends on hackathon timeline.
-- **Phase 3 onward:** see section 11+.
+- **Phase 2.5 (Auth + RLS cutover):** complete. Real Supabase Auth, 3-step onboarding, middleware session guard, `normalizeSupabaseUrl` in all SSR clients, `DEMO_USER_ID` removed, migrations 0006 (drop demo seed) and 0007 (RLS policies) ready to apply. Run `pnpm --filter web test:isolation` after applying migrations to verify two-account isolation.
+- **Phase 3 (HITL approval flow):** next. See section 11+ of the build guide.
 
 ## Repo orientation
 
@@ -57,4 +57,4 @@ If the build guide doesn't cover something, surface to the owner before implemen
 
 ---
 
-*This file is intentionally thin. The room is `PRODUCTION_BUILD_GUIDE.md`. Last updated: post-OpenClaw audit, post-Discord-promotion, post-Phase-2.5-sequencing.*
+*This file is intentionally thin. The room is `PRODUCTION_BUILD_GUIDE.md`. Last updated: Phase 2.5 complete (2026-05-04).*

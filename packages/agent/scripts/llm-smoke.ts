@@ -25,8 +25,12 @@ loadEnv({ path: "../../.env" });
 
 const PROMPT = `Reply with strict JSON only: {"msg":"ok"}.`;
 const SCHEMA = z.object({ msg: z.string() });
-const USER_ID =
-  process.env.DEMO_USER_ID ?? "00000000-0000-0000-0000-000000000001";
+const userIdArg = process.argv.slice(2).find((a) => a.startsWith("--user-id="))?.split("=")[1];
+if (!userIdArg) {
+  console.error("Error: --user-id=<uuid> is required");
+  process.exit(1);
+}
+const USER_ID = userIdArg;
 
 type Outcome =
   | { kind: "skipped"; reason: string }

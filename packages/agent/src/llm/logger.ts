@@ -35,8 +35,8 @@ export async function logLLMCall(input: LogCallInput): Promise<void> {
   }
 
   try {
-    const { createServerClient } = await import("@openclaw/db/client");
-    const db = createServerClient();
+    const { createServiceRoleClient } = await import("@openclaw/db/client");
+    const db = createServiceRoleClient();
     const { error } = await db.from("llm_calls").insert({
       user_id: input.user_id,
       purpose: input.purpose,
