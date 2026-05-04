@@ -553,4 +553,4 @@ This is a hackathon project that will become a real product. Every line of code,
 
 ---
 
-*Last updated: at project initialization. Update this file with new decisions as they're made.*
+*Last updated: 2026-05-04 — Phase 2 complete. Scout pipeline end-to-end: stub scraper + Zyte adapter, lead scoring with structured rubric, Inngest scout/requested function, /api/scout route, useLeads + useScoutActivity + useStats realtime hooks, LeadDetail panel with scoring reasoning, dashboard polish pass. All Phase 2 commits on main, typecheck clean across all 8 packages. Telegram digest and sources table population deferred to Phase 2.5 / Phase 3. Phase 3 (pitch drafting + HITL) is next.*
