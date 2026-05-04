@@ -8,6 +8,7 @@ import {
   type LeadRow,
   type LeadStatus,
 } from "../lib/fixtures";
+import { ageFromIso } from "../lib/leadAdapters";
 
 type SortKey = "score" | "title" | "age";
 
@@ -24,9 +25,7 @@ export function LeadTable({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const sorted = [...leads].sort((a, b) => {
-    const av = a[sortKey];
-    const bv = b[sortKey];
-    const cmp = av > bv ? 1 : av < bv ? -1 : 0;
+    const cmp = compare(a, b, sortKey);
     return cmp * (sortDir === "asc" ? 1 : -1);
   });
 
@@ -97,7 +96,7 @@ export function LeadTable({
             <span className="oc-lead-title">
               <span className="oc-lead-name">{lead.title}</span>
               <span className="oc-lead-meta">
-                <span className="oc-mono">{lead.id}</span>
+                <span className="oc-mono">{lead.id.slice(0, 8)}</span>
                 {" · "}
                 {lead.budget}
               </span>
@@ -108,7 +107,9 @@ export function LeadTable({
             <span>
               <LayerTag layer={lead.layer} />
             </span>
-            <span className="oc-mono oc-meta">{lead.age} ago</span>
+            <span className="oc-mono oc-meta">
+              {ageFromIso(lead.scraped_at)} ago
+            </span>
             <span>
               <StatusPill status={lead.status} />
             </span>
@@ -120,6 +121,21 @@ export function LeadTable({
       </div>
     </div>
   );
+}
+
+function compare(a: LeadRow, b: LeadRow, key: SortKey): number {
+  if (key === "score") {
+    if (a.score === null && b.score === null) return 0;
+    if (a.score === null) return -1; // pending sorts last in desc, first in asc
+    if (b.score === null) return 1;
+    return a.score - b.score;
+  }
+  if (key === "age") {
+    // age ascending = oldest first; ISO string ascending = oldest first
+    return a.scraped_at < b.scraped_at ? -1 : a.scraped_at > b.scraped_at ? 1 : 0;
+  }
+  // title
+  return a.title.localeCompare(b.title);
 }
 
 function SortHeader({
@@ -149,7 +165,10 @@ function SortHeader({
   );
 }
 
-function ScoreBadge({ score }: { score: number }) {
+function ScoreBadge({ score }: { score: number | null }) {
+  if (score === null) {
+    return <span className="oc-score oc-score-pending">···</span>;
+  }
   let bg = "#7A1F1F";
   let fg = "#FFFFFF";
   if (score >= 90) {

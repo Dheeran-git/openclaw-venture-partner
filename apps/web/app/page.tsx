@@ -6,26 +6,24 @@ import { Topbar } from "../components/Topbar";
 import { StatCards } from "../components/StatCards";
 import { LeadTable } from "../components/LeadTable";
 import { ActivityRail } from "../components/ActivityRail";
-import {
-  activity as initialActivity,
-  leads,
-  stats,
-  type ActivityEvent,
-} from "../lib/fixtures";
+import { stats } from "../lib/fixtures";
+import { useLeads } from "../hooks/useLeads";
+import { useScoutActivity } from "../hooks/useScoutActivity";
 
 export default function Page() {
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [running, setRunning] = useState(false);
-  const [activity, setActivity] =
-    useState<ActivityEvent[]>(initialActivity);
+  const { leads, loading } = useLeads();
+  const { events, pushOptimistic } = useScoutActivity();
 
   async function handleRunScout(query: string) {
     if (running) return;
     setRunning(true);
-    setActivity((prev) => [
-      { kind: "live", text: `Scouting "${query}"...`, meta: "now" },
-      ...prev,
-    ]);
+    pushOptimistic({
+      kind: "live",
+      text: `Scouting "${query}"...`,
+      meta: "now",
+    });
 
     try {
       const res = await fetch("/api/scout", {
@@ -46,13 +44,17 @@ export default function Page() {
     }
   }
 
+  const subtitle = loading
+    ? "Loading leads..."
+    : `${leads.length} leads queued · sorted by score`;
+
   return (
     <div className="oc-app">
       <Sidebar />
       <main className="oc-main">
         <Topbar
           title="Lead Inbox"
-          subtitle={`${leads.length} leads queued · sorted by score`}
+          subtitle={subtitle}
           onRunScout={handleRunScout}
           running={running}
         />
@@ -65,7 +67,7 @@ export default function Page() {
           />
         </div>
       </main>
-      <ActivityRail events={activity} />
+      <ActivityRail events={events} />
     </div>
   );
 }

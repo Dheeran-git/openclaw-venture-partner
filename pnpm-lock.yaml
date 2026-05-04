@@ -19,6 +19,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@next/env':
+        specifier: ^16.2.4
+        version: 16.2.4
       '@openclaw/agent':
         specifier: workspace:*
         version: link:../../packages/agent
@@ -554,6 +557,9 @@ packages:
 
   '@next/env@15.0.3':
     resolution: {integrity: sha512-t9Xy32pjNOvVn2AS+Utt6VmyrshbpfUMhIjFO60gI58deSo/KgLOp31XZ4O+kY/Is8WAGYwA5gR7kOb1eORDBA==}
+
+  '@next/env@16.2.4':
+    resolution: {integrity: sha512-dKkkOzOSwFYe5RX6y26fZgkSpVAlIOJKQHIiydQcrWH6y/97+RceSOAdjZ14Qa3zLduVUy0TXcn+EiM6t4rPgw==}
 
   '@next/eslint-plugin-next@15.0.3':
     resolution: {integrity: sha512-3Ln/nHq2V+v8uIaxCR6YfYo7ceRgZNXfTd3yW1ukTaFbO+/I8jNakrjYWODvG9BuR2v5kgVtH/C8r0i11quOgw==}
@@ -3349,6 +3355,8 @@ snapshots:
     optional: true
 
   '@next/env@15.0.3': {}
+
+  '@next/env@16.2.4': {}
 
   '@next/eslint-plugin-next@15.0.3':
     dependencies:

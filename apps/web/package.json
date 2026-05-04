@@ -11,16 +11,17 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@next/env": "^16.2.4",
     "@openclaw/agent": "workspace:*",
     "@openclaw/db": "workspace:*",
     "@openclaw/shared": "workspace:*",
     "@openclaw/worker": "workspace:*",
     "inngest": "^3.34.0",
-    "zod": "^3.25.76",
+    "lucide-react": "0.454.0",
     "next": "15.0.3",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
-    "lucide-react": "0.454.0"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "20.16.10",
