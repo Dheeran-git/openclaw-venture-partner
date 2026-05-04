@@ -1,27 +1,27 @@
 import type { Scraper } from "./types";
 import { stubScraper } from "./stub";
+import { makeZyteScraper } from "./zyte";
 
 export type { Scraper, ScrapedLead } from "./types";
 export { stubScraper } from "./stub";
+export { makeZyteScraper } from "./zyte";
 
 /**
  * Picks the active scraper for the current process. Defaults to the
  * stub adapter so demos and tests never depend on external services.
- * Set SCRAPER=zyte (and ZYTE_API_KEY) to switch to real scraping --
- * the Zyte adapter ships in a later step.
+ * Set SCRAPER=zyte (and ZYTE_API_KEY) to switch to live Upwork scraping.
  */
 export function getScraper(): Scraper {
   const choice = process.env.SCRAPER?.toLowerCase();
 
   if (choice === "zyte") {
-    if (!process.env.ZYTE_API_KEY) {
+    const apiKey = process.env.ZYTE_API_KEY;
+    if (!apiKey) {
       throw new Error(
         "SCRAPER=zyte but ZYTE_API_KEY is not set. Add the key to .env or unset SCRAPER."
       );
     }
-    throw new Error(
-      "Zyte scraper not implemented yet. Unset SCRAPER (or set SCRAPER=stub) for now."
-    );
+    return makeZyteScraper(apiKey);
   }
 
   return stubScraper;
