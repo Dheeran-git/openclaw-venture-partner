@@ -1,60 +1,280 @@
-# OpenClaw Backlog
+# BACKLOG.md — OpenClaw Venture Partner
 
-Running list of deferred work after Phase 2. Update this file as items land or get reprioritised. Do not let it become stale.
+Running ledger of deferred work, known debt, and decisions postponed. Read at the start of every session. Update as items move (defer further, complete, change scope, get blocked).
 
----
-
-## Hackathon-blocking (Phase 3–7)
-
-Must land before submission to make the demo coherent.
-
-- **Telegram digest + HITL approval flow** — Phase 3. Bot setup, inline approve/reject keyboards, `payload_hash` verification on approval, round-trip from "Approve in Telegram" → "Pitch sent."
-- **Pitch drafting prompt and pipeline** — Phase 3. Versioned `.md` prompt, Zod schema, few-shot examples, wired through the LLM client.
-- **Pitch card with approval bar in dashboard** — Phase 3. Port from `openclaw-design-system/project/ui_kits/dashboard/PitchCard.jsx`. Replaces the current "Pitch drafting in Phase 3." placeholder in LeadDetail.
-- **Layer 2 proof-of-value (Lighthouse audit)** — Phase 4. Agent runs Lighthouse on a prospect's site, generates summary, attaches to pitch. The demo's "wow" moment.
-- **Layer 3 negotiation (reply drafting + client memory)** — Phase 5. `clients.memory_md` write loop, three-reply-options pattern, upsell trigger.
-- **Demo mode button** — Phase 6. Single click runs a canned end-to-end scenario with predictable data. Critical for live-demo safety. Do not skip.
+This document is the operational complement to `PRODUCTION_BUILD_GUIDE.md`. The build guide says *what we're doing*; this document says *what we're not doing yet*.
 
 ---
 
-## Phase 2 leftover (Phase 6 polish)
+## How to read this
 
-Not blocking Phase 3. Addressable in the final polish pass.
+Items are grouped by category, not priority. Within each category, items are roughly ordered by which is most likely to come up first. Each item has:
+- **What**: the concrete deliverable
+- **Why deferred**: the reasoning at deferral time (helpful when revisiting)
+- **Owner / Phase**: who picks it up and when
+- **Status**: `open` | `in-progress` | `done` | `wontfix`
 
-- **Search bar** — stubbed at 45% opacity. Full-text search across leads/clients/pitches. Reasonable Phase 6 work; possibly post-hackathon.
-- **Bell icon (notifications)** — stubbed. Probably skip for the hackathon entirely. Real implementation needs a notifications table, per-user feed, read/unread state.
-- **Sidebar nav items beyond Inbox** — Scout, Pitches, Clients, Templates, Settings are all dimmed. Pitches and Clients become real pages in Phase 3 and Phase 5 respectively. Templates and Settings probably stay dimmed through the hackathon.
-- **Stat cards real values** — Pitches Sent, Reply Rate, Hours Saved show "—". The hook wiring exists; data starts flowing in Phase 3+.
-- **Week-over-week deltas on stat cards** — dropped entirely. Requires a snapshot job or daily counts table. Phase 6 if at all.
-- **Activity rail multi-run UX** — buffer accumulates events from multiple scout runs without a visual divider. Could add a "— new run —" separator. Polish.
-- **"Scoring..." placeholder visibility** — the window is ~3–5s at concurrency 5 and barely visible. Drop concurrency to 1 if you want more visible demo theatrics. Optional.
-- **Empty signals on pre-migration score rows** — the 10 leads scored before migration 0004 added `signals` have `null` signals. Cosmetic; their pills just don't render. Either re-score or accept.
+When an item moves to `done`, leave it in this file with a strikethrough — useful historical record. When an item is reframed, edit the entry rather than deleting; the audit trail matters.
 
 ---
 
-## Production-migration (post-hackathon)
+## Section A — Hackathon-blocking deferred items (Phase 3 onward)
 
-Architectural decisions made deliberately for hackathon speed. Track them so they don't get lost.
+These must land before submission to make the demo coherent.
 
-- **RLS policies** — currently disabled on `leads`, `scores`, `profiles`. Production needs Row-Level Security on every table. `0005_enable_rls.sql` plus per-table policies.
-- **Real authentication** — Supabase Auth wired into Next.js. Replaces `DEMO_USER_ID`. Login flow, session management, protected routes.
-- **Zyte adapter activation** — ships in Phase 2 but inactive. Production requires `ZYTE_API_KEY` + `SCRAPER=zyte`, plus hardening the parser against Upwork HTML drift (the two-strategy fallback was conservative).
-- **Anthropic API as primary LLM** — currently Copilot → OpenRouter → Gemini → Anthropic. Production flips to Anthropic-first. The adapter is already built; one-line router change.
-- **Stripe billing** — subscription management for production SaaS.
-- **Onboarding flow** — signup → profile setup → first scout. Phase 6 for demo (probably skipped); production-mandatory.
-- **Marketing site** — separate `apps/marketing` or a `(marketing)` route group. Out of hackathon scope.
-- **Custom domain** — `vercel.app` fine for hackathon. Production needs a real domain and a matching `from` address for Resend.
-- **Privacy policy + terms of service** — required for production; optional for hackathon unless judges ask.
+### A1. Telegram + Discord HITL approval flow
+**What:** Telegram and Discord bots both fully wired with the approval flow. Inline keyboards (Telegram) and message components with embeds (Discord). `payload_hash` verification on every approval. Round-trip from "tap Approve in chat" → "pitch sent."
+**Why deferred:** Phase 2 ended with the architectural foundation. This is the visceral demo moment, owned by Phase 3.
+**Owner / Phase:** Claude Code, Phase 3 step 6 (split into 6a–6e).
+**Status:** open
+
+### A2. Pitch drafting prompt and pipeline
+**What:** `packages/agent/src/prompts/draft-pitch.md` with rubric and few-shot examples. `DraftPitchOutput` Zod schema. `draftPitch()` function calling LLM with profile + lead + (optional) client memory.
+**Why deferred:** Phase 3 owns it. Mirrors the Phase 2 scoring prompt structure.
+**Owner / Phase:** Claude Code, Phase 3 step 1.
+**Status:** open
+
+### A3. Pitch card with approval bar in dashboard
+**What:** Port `openclaw-design-system/project/ui_kits/dashboard/PitchCard.jsx` to TSX. Replace the "Pitch drafting in Phase 3" placeholder in LeadDetail. Wire to `llm.stream()` for character-by-character streaming.
+**Why deferred:** Was deferred from Phase 2 step 7 to keep that phase scoped to scout pipeline only.
+**Owner / Phase:** Claude Code, Phase 3 step 3.
+**Status:** open
+
+### A4. OpenClaw Gateway deployment (dev + prod)
+**What:** Deploy OpenClaw via Railway one-click template. Dev Gateway: `openclaw-vp-dev`. Prod Gateway: `openclaw-vp-prod`. Save URL and `OPENCLAW_GATEWAY_TOKEN` to `.env`.
+**Why deferred:** New requirement after the OpenClaw audit revealed it's a deployable application, not an npm library. Hard prerequisite for Phase 3 chat work.
+**Owner / Phase:** Claude Code, Phase 3 step 0 (~30 min).
+**Status:** open
+
+### A5. MCP server endpoint at /api/mcp
+**What:** Build `apps/web/app/api/mcp/route.ts`. Authenticate via `MCP_SHARED_SECRET`. Implement at least 8 tools: `runScout`, `getRecentLeads`, `getTopLead`, `draftPitch`, `approvePitch`, `rejectPitch`, `bindTelegram`, `bindDiscord`, `notifyAgent`. Each uses Zod schema validation.
+**Why deferred:** New requirement from the OpenClaw audit. Replaces the previously-imagined "tools registered as TS imports" model.
+**Owner / Phase:** Claude Code, Phase 3 step 6a (~30 min).
+**Status:** open
+
+### A6. binding_codes table and chat-platform binding flow
+**What:** Migration 0005 includes `binding_codes` table. `/settings/connect` page on dashboard generates 6-digit code, user sends to bot, `bindTelegram` / `bindDiscord` MCP tool validates and writes to `profiles.{telegram,discord}_user_id`.
+**Why deferred:** New requirement. Without binding, OpenClaw can't identify which `user_id` an incoming Telegram/Discord message belongs to.
+**Owner / Phase:** Claude Code, Phase 3 step 6c-6d.
+**Status:** open
+
+### A7. Layer 2 proof-of-value (Lighthouse audit)
+**What:** Worker function that runs `lighthouse` against a target URL, stores result in `proof_artifacts`. Pitch prompt updated to reference proof concretely. PitchCard shows proof preview.
+**Why deferred:** Phase 4. The "wow" moment of the demo where the agent builds something real and attaches it to outreach.
+**Owner / Phase:** Claude Code, Phase 4.
+**Status:** open
+
+### A8. Layer 3 negotiation (reply drafting + client memory)
+**What:** Inbound email ingestion (Resend Inbound webhook). Reply classification prompt. Reply drafting with three options. Persistent `clients.memory_md` updated diff-by-diff. Upsell detection cron.
+**Why deferred:** Phase 5. The full deal lifecycle closes here.
+**Owner / Phase:** Claude Code, Phase 5.
+**Status:** open
+
+### A9. Demo mode button
+**What:** A single click that runs a canned end-to-end scenario with predictable data. Critical for live-demo safety.
+**Why deferred:** Phase 6. **Don't skip this.** Live demos break; demo mode is the parachute.
+**Owner / Phase:** Claude Code, Phase 6 polish step.
+**Status:** open
+
+### A10. Scripted demo arc rehearsed and timed
+**What:** The 90-second demo from build-guide section 16.5. Practiced. Timed. Pre-demo setup checklist completed before judging.
+**Why deferred:** Done in Phase 7 (close to submission). Earlier rehearsal risks the script being out of sync with the product as it evolves.
+**Owner / Phase:** Dheeran, Phase 7.
+**Status:** open
 
 ---
 
-## Operational commitments
+## Section B — Phase 2 leftover (small polish, addressable in Phase 6 or post-hackathon)
 
-Not features, but commitments worth tracking.
+These didn't get fully wired in Phase 2 but aren't blocking anything immediate.
 
-- **Verify Zyte free-tier 24h before submission** — the GitHub Student perk depends on the dummy account staying valid.
-- **Verify Copilot OAuth token 24h before submission** — same concern. Test the dummy account token the day before.
-- **Check OpenRouter free credit** — if heavily used during dev, you may be near the cap. Check before demo day.
-- **Record backup demo video** — Phase 7. Record a flawless run-through after final rehearsal so a live-demo failure doesn't kill submission.
-- **README architecture diagram** — before submission: system architecture diagram, tech stack, "how to run locally," "what's implemented vs stubbed," screenshots. Judges read READMEs.
-- **Keep CLAUDE.md current** — new architectural decisions land in CLAUDE.md before the session that introduces them ends.
+### B1. Search bar in topbar
+**What:** Currently stubbed at 45% opacity. Wiring means full-text search across leads, clients, pitches. Postgres FTS backend, debounced typeahead frontend, `⌘K` shortcut.
+**Why deferred:** Real product feature; Phase 6 polish.
+**Owner / Phase:** Claude Code, Phase 6 step 5.
+**Status:** open
+
+### B2. Bell icon (notifications)
+**What:** Currently stubbed. Wiring means a notifications table, per-user feed, read/unread state, in-app feed, plus chat fanout (already wired structurally).
+**Why deferred:** Phase 6 step 6 if shipped at all. Probably skip for hackathon — there's no compelling demo value over the existing chat-platform notifications.
+**Owner / Phase:** Claude Code, Phase 6 step 6 (consider skipping).
+**Status:** open
+
+### B3. Sidebar nav items beyond Inbox
+**What:** Scout, Pitches, Clients, Templates, Settings are dimmed. Pitches activates in Phase 3. Clients activates in Phase 5. Templates and Settings stay dimmed unless explicitly built.
+**Why deferred:** Most have no underlying data until later phases create it. Templates and Settings are Phase 6 polish.
+**Owner / Phase:** Claude Code, by phase as data appears.
+**Status:** open
+
+### B4. Stat cards real values for Pitches Sent, Reply Rate, Hours Saved
+**What:** Currently `—`. Will become real numbers as Phase 3 (pitches) and Phase 5 (replies) produce data. "Hours Saved" needs a heuristic — TBD.
+**Why deferred:** Wiring exists; just no data flowing through yet.
+**Owner / Phase:** Phase 3 step 8 partially; Phase 5 finishes; Phase 6 for "Hours Saved" formula.
+**Status:** open
+
+### B5. Week-over-week deltas on stat cards
+**What:** Currently dropped from the design entirely. Requires either a snapshot job (daily counts table) or sliding-window queries.
+**Why deferred:** Polish-tier feature; Phase 6 if at all.
+**Owner / Phase:** Claude Code, Phase 6 (optional).
+**Status:** open
+
+### B6. Activity rail divider between scout runs
+**What:** Currently the buffer accumulates events from multiple runs without a visual divider. Add a subtle separator or `── new run ──` marker between runs.
+**Why deferred:** UX polish, not a bug.
+**Owner / Phase:** Claude Code, Phase 6 polish.
+**Status:** open
+
+### B7. "Scoring..." placeholder window for new leads
+**What:** Architecture supports it; with concurrency=5 it's so brief (~3-5s) you can barely see it. Could drop concurrency to 1 to make demo theatrics more visible.
+**Why deferred:** Optional. Real users prefer fast over theatrical.
+**Owner / Phase:** Optional, never if no demo benefit.
+**Status:** open
+
+---
+
+## Section C — Production-migration items (post-hackathon, but tracked now)
+
+Things explicitly pushed past the hackathon submission. Tracking them so they don't get lost.
+
+### C1. Phase 2.5 — Auth + RLS cutover
+**What:** Real Supabase Auth (email/password, magic link, Google OAuth, GitHub OAuth). First-run onboarding (3 steps: profile, skills, optional Telegram bind). Migration 0006 enabling RLS on all user-scoped tables. Two-account isolation test passing.
+**Why deferred:** Sequencing decision per build-guide section 11.0. If hackathon deadline ≤7 days, do Phase 3 on `DEMO_USER_ID` first and make this the very first post-hackathon work. If >7 days, do this first. **Hard pre-merge blocker before any production user is onboarded.**
+**Owner / Phase:** Claude Code, Phase 2.5 (timing TBD per timeline).
+**Status:** open
+
+### C2. Zyte adapter activation
+**What:** Adapter ships in Phase 2 but stub remains the default scraper. Activating means setting `ZYTE_API_KEY` + `SCRAPER=zyte` in production. Production also requires the parser to be hardened against Upwork's HTML drift (Phase 2's two-strategy fallback was conservative; production needs real-world calibration).
+**Why deferred:** Stub is fine for demo (deterministic). Real scraping costs real Zyte credits.
+**Owner / Phase:** Claude Code, Phase 6 / Phase 7.
+**Status:** open
+
+### C3. Anthropic API as primary LLM provider (decision deferred)
+**What:** Currently the chain is Copilot → Gemini → Groq → OpenRouter → Anthropic-dormant. Production might flip to Anthropic-first with proper billing. The adapter is already built; flipping the order in the router is a one-line change.
+**Why deferred:** Cost decision tied to monetization model. Defer until pricing structure exists.
+**Owner / Phase:** Dheeran (decision), Claude Code (one-line change), post-launch.
+**Status:** open
+
+### C4. Stripe billing
+**What:** Production SaaS needs subscription management. Stub the model now if pricing is decided.
+**Why deferred:** Pricing/monetization is itself deferred. Build later.
+**Owner / Phase:** Post-launch.
+**Status:** open
+
+### C5. Marketing site / landing page
+**What:** Separate `apps/marketing` or a `(marketing)` route group. Out of hackathon scope; required for production launch.
+**Why deferred:** Out of scope until launch.
+**Owner / Phase:** Post-launch.
+**Status:** open
+
+### C6. Custom domain
+**What:** `vercel.app` subdomain is fine for hackathon. Production needs `openclaw.app` or whatever you settle on. Plus email-from address (`hello@openclaw.app` for Resend, with DKIM/SPF/DMARC verified).
+**Why deferred:** Naming + hosting decisions. Phase 7.
+**Owner / Phase:** Dheeran (naming), Claude Code (DNS + Resend setup), Phase 7.
+**Status:** open
+
+### C7. Empty signals on pre-Phase-2 score rows
+**What:** The 10 leads scored during the dryrun (before migration 0004 added the `signals` column) have null signals. Cosmetic for the hackathon (their signals just don't render). Production: re-score them once or accept.
+**Why deferred:** Cosmetic. Trivial to fix when convenient.
+**Owner / Phase:** Optional, anytime.
+**Status:** open
+
+### C8. Privacy policy + terms of service
+**What:** Required for production launch and ad networks. Optional for hackathon submission unless judges ask.
+**Why deferred:** Legal review needed. Post-launch.
+**Owner / Phase:** Dheeran, post-launch.
+**Status:** open
+
+### C9. Per-Gateway rate limiting on /api/mcp
+**What:** Once OpenClaw is in production, the Gateway is also a client of our Next.js app. Apply rate limits per Gateway token: `/api/mcp` 60/min global, `runScout` 10/hour matching user-facing limits, `draftPitch` 30/day matching its sister route. Worker → notifyAgent uses separate `MCP_WORKER_SECRET` with looser limits.
+**Why deferred:** New requirement from the architectural revision. Phase 6 production hardening.
+**Owner / Phase:** Claude Code, Phase 6 step 2.
+**Status:** open
+
+### C10. WhatsApp / Slack chat platforms activation
+**What:** OpenClaw plugins exist; env vars in `.env.example`; `ENABLE_*=false` flags in Gateway config. Activation is flipping the flag and providing credentials. Slack: ~30 min. WhatsApp: 3-10 days due to Meta Business Verification.
+**Why deferred:** Telegram + Discord cover ~95% of target audience. WhatsApp/Slack stay scaffolded until specific user demand.
+**Owner / Phase:** Claude Code, on-demand post-launch.
+**Status:** open
+
+---
+
+## Section D — Operational items (commitments, not features)
+
+### D1. Verify Zyte free-tier still works on demo day
+**What:** Zyte's GitHub Student perk depends on the dummy account staying valid. Worth a sanity check 24h before submission.
+**Why deferred:** Pre-submission ops check, not feature work.
+**Owner / Phase:** Dheeran, T-24h before submission.
+**Status:** open
+
+### D2. Verify Copilot OAuth still works
+**What:** Same concern as D1. Dummy GitHub account, OAuth token, routing through `copilot-api`. Test the day before.
+**Why deferred:** Pre-submission ops check.
+**Owner / Phase:** Dheeran, T-24h before submission.
+**Status:** open
+
+### D3. Verify OpenRouter free credit isn't burned
+**What:** The fallback. If hit heavily during dev, may be near credit cap. Check.
+**Why deferred:** Pre-submission ops check.
+**Owner / Phase:** Dheeran, T-24h before submission.
+**Status:** open
+
+### D4. Backup demo video recorded
+**What:** Phase 7 task. Record a flawless run-through after final rehearsal so live-demo failures don't kill submission. Loom or unlisted YouTube. Linked from README.
+**Why deferred:** Comes after Phase 7 deployment.
+**Owner / Phase:** Dheeran, Phase 7.
+**Status:** open
+
+### D5. README architecture diagram and screenshots
+**What:** The repo's README is currently a one-paragraph blurb. Before submission, expand with: system architecture diagram, technology stack, "how to run locally," "what's implemented vs stubbed," and screenshots. Judges read READMEs.
+**Why deferred:** Pre-submission polish.
+**Owner / Phase:** Claude Code + Dheeran review, Phase 7.
+**Status:** open
+
+### D6. Push CLAUDE.md and PRODUCTION_BUILD_GUIDE.md updates as we go
+**What:** Both documents evolve with the project. New architectural decisions land in the appropriate document before the session that introduces them ends.
+**Why deferred:** Continuous practice, not deferred work.
+**Owner / Phase:** Claude Code, every session.
+**Status:** open (ongoing)
+
+### D7. OpenClaw Gateway health monitoring
+**What:** Once in production, the Gateway is a critical service. Set up uptime monitoring (Better Uptime / Cronitor) for the Gateway URL. Pipe `openclaw doctor --remote` output to scheduled health checks.
+**Why deferred:** Phase 7 observability.
+**Owner / Phase:** Claude Code, Phase 7 step 5.
+**Status:** open
+
+### D8. Dummy GitHub account renewal calendar
+**What:** GitHub Student status expires periodically. Add a calendar reminder ~60 days before expiry to verify status and renew if needed. If status lapses, Copilot OAuth and Zyte free-tier both go down.
+**Why deferred:** Calendar item, not code.
+**Owner / Phase:** Dheeran, ongoing.
+**Status:** open
+
+---
+
+## Decision log
+
+Items here are decisions made during planning sessions that affect future work. Reference rather than re-litigate.
+
+- **2026-04 — Telegram is the primary chat platform.** Initial decision.
+- **2026-05-04 — Discord promoted to primary alongside Telegram.** Audit revealed OpenClaw ships both adapters built-in, so the marginal cost of supporting both is ~2-3 hours. Discord covers our specific target demographic (React/Next.js freelancers).
+- **2026-05-04 — Architecture corrected: OpenClaw is deployed, not embedded.** Discovered during audit that OpenClaw is a standalone Gateway application, not an npm library. Section 6 of the build guide rewritten end-to-end. Setup model: Railway one-click template.
+- **2026-05-04 — Five-provider LLM chain confirmed.** Worker-side calls use our internal client; chat-side calls use OpenClaw's native routing pointed at the same providers. Both layers point at the same five providers. See build-guide section 4.0.
+- **2026-05-04 — Phase 2.5 vs Phase 3 sequencing is timeline-dependent.** Build-guide section 11.0 documents the tradeoff. If hackathon deadline ≤7 days, Phase 3 on DEMO_USER_ID first, then Phase 2.5 as first post-hackathon work. Otherwise Phase 2.5 first.
+- **2026-05-04 — Zyte called directly from Inngest worker, not via OpenClaw.** Earlier framing was incorrect. Scraping is worker-side; OpenClaw only sees the result of a scout when chat asks for it.
+
+---
+
+## How to use this document
+
+**At session start:** read this file alongside `PRODUCTION_BUILD_GUIDE.md` and `CLAUDE.md`.
+
+**When work moves from `open` to `in-progress`:** update the status. When it completes, change to `done` and add `~~strikethrough~~`.
+
+**When new deferred work surfaces during a build:** add a new entry in the appropriate section before ending the session. Don't trust memory across sessions.
+
+**When scope changes on an item:** edit the entry in place. Add a parenthetical note about the change date.
+
+**When an item gets reframed:** strike the old text and add the new text below. Audit trail is more valuable than tidiness.
+
+---
+
+*Last updated: post-OpenClaw-audit and post-Discord-promotion comprehensive revision. New items added: A4 (Gateway deployment), A5 (MCP server endpoint), A6 (binding_codes), C9 (per-Gateway rate limiting), C10 (WhatsApp/Slack on-demand), D7 (Gateway health monitoring), D8 (GitHub Student renewal). Updated A1 to cover both Telegram and Discord. Updated C1 to reflect timeline-dependent Phase 2.5 sequencing.*
