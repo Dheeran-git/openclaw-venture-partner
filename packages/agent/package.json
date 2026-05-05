@@ -9,10 +9,12 @@
     ".": "./src/index.ts",
     "./llm": "./src/llm/client.ts",
     "./llm/types": "./src/llm/types.ts",
-    "./scoring": "./src/scoring/index.ts"
+    "./scoring": "./src/scoring/index.ts",
+    "./drafting": "./src/drafting/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "smoke": "tsx scripts/llm-smoke.ts",
     "score-smoke": "tsx scripts/score-smoke.ts"
   },
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "tsx": "4.19.2",
-    "typescript": "5.6.3"
+    "typescript": "5.6.3",
+    "vitest": "^4.1.5"
   }
 }
