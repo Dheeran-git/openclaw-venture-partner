@@ -14,7 +14,7 @@ export type Json =
   | Json[];
 
 export type LeadLayer = 1 | 2 | 3;
-export type PitchStatus = "draft" | "approved" | "sent" | "rejected";
+export type PitchStatus = "draft" | "approved" | "sent" | "rejected" | "send_failed";
 export type ApprovalStatus = "approved" | "rejected" | "pending" | "expired";
 export type LLMPurpose =
   | "score_lead"
@@ -32,8 +32,11 @@ export interface Database {
           display_name: string | null;
           skills: Json | null;
           hourly_rate: number | null;
-          portfolio_url: string | null;
           bio: string | null;
+          portfolio_urls: string[];
+          past_clients: Json;
+          availability: string | null;
+          timezone: string;
           created_at: string;
         };
         Insert: {
@@ -41,8 +44,11 @@ export interface Database {
           display_name?: string | null;
           skills?: Json | null;
           hourly_rate?: number | null;
-          portfolio_url?: string | null;
           bio?: string | null;
+          portfolio_urls?: string[];
+          past_clients?: Json;
+          availability?: string | null;
+          timezone?: string;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
@@ -104,14 +110,29 @@ export interface Database {
           draft: string;
           subject: string | null;
           status: PitchStatus;
+          payload_hash: string | null;
+          expected_signal: Json | null;
+          send_attempt_count: number;
+          last_send_error: string | null;
           approved_at: string | null;
           sent_at: string | null;
           created_at: string;
         };
-        Insert: Omit<
-          Database["public"]["Tables"]["pitches"]["Row"],
-          "id" | "created_at" | "status"
-        > & { id?: string; created_at?: string; status?: PitchStatus };
+        Insert: {
+          id?: string;
+          lead_id: string;
+          user_id: string;
+          draft: string;
+          subject?: string | null;
+          status?: PitchStatus;
+          payload_hash?: string | null;
+          expected_signal?: Json | null;
+          send_attempt_count?: number;
+          last_send_error?: string | null;
+          approved_at?: string | null;
+          sent_at?: string | null;
+          created_at?: string;
+        };
         Update: Partial<Database["public"]["Tables"]["pitches"]["Insert"]>;
       };
       clients: {
@@ -139,6 +160,8 @@ export interface Database {
           payload_hash: string;
           resource_type: string | null;
           resource_id: string | null;
+          verified_payload_hash: string | null;
+          actor_platform: string | null;
           status: ApprovalStatus;
           decided_at: string | null;
           created_at: string;

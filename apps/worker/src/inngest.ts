@@ -21,4 +21,10 @@ export type Events = {
   "lead/scored": {
     data: { lead_id: string; score: number };
   };
+  "pitch/draft-requested": {
+    data: { user_id: string; lead_id: string };
+  };
+  "pitch/approved": {
+    data: { pitch_id: string; user_id: string };
+  };
 };
