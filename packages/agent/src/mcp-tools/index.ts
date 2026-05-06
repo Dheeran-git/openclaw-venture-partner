@@ -1,5 +1,7 @@
 import { createServiceRoleClient } from "@openclaw/db";
 import { Inngest } from "inngest";
+import { randomUUID } from "node:crypto";
+import { computePayloadHash } from "../drafting";
 
 const inngest = new Inngest({
   id: "openclaw",
@@ -34,7 +36,41 @@ async function resolveUser(
 }
 
 // ---------------------------------------------------------------------------
-// Full implementations
+// Telegram Bot API helpers
+// ---------------------------------------------------------------------------
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function sendTelegramMessage(
+  chatId: number | string,
+  text: string,
+  inlineKeyboard?: Array<Array<{ text: string; callback_data: string }>>
+): Promise<{ ok: boolean; message_id?: number }> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return { ok: false };
+  const body: Record<string, unknown> = {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+  };
+  if (inlineKeyboard) {
+    body.reply_markup = { inline_keyboard: inlineKeyboard };
+  }
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = (await res.json().catch(() => ({}))) as {
+    ok?: boolean;
+    result?: { message_id?: number };
+  };
+  return { ok: json.ok ?? false, message_id: json.result?.message_id };
+}
+
+// ---------------------------------------------------------------------------
+// Lead-related tools
 // ---------------------------------------------------------------------------
 
 async function runScout(args: Args): Promise<ToolResult> {
@@ -137,6 +173,214 @@ async function getTopLead(args: Args): Promise<ToolResult> {
 }
 
 // ---------------------------------------------------------------------------
+// Pitch tools — chat-surface equivalents of the web /api/pitches/[id]/* routes
+// ---------------------------------------------------------------------------
+
+async function getPendingPitches(args: Args): Promise<ToolResult> {
+  const { platform, platform_user_id, limit = 10 } = args as {
+    platform: string;
+    platform_user_id: string;
+    limit?: number;
+  };
+
+  const userId = await resolveUser(platform, platform_user_id);
+  if (!userId) return { ok: false, error: "platform_not_bound" };
+
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase
+    .from("pitches")
+    .select("id, lead_id, subject, status, created_at, payload_hash")
+    .eq("user_id", userId)
+    .eq("status", "draft")
+    .order("created_at", { ascending: false })
+    .limit(Number(limit));
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, pitches: data ?? [] };
+}
+
+async function approvePitch(args: Args): Promise<ToolResult> {
+  const {
+    user_id,
+    pitch_id,
+    payload_hash,
+    actor_platform = "telegram",
+  } = args as {
+    user_id: string;
+    pitch_id: string;
+    payload_hash: string;
+    actor_platform?: "telegram" | "discord" | "web";
+  };
+
+  if (!user_id || !pitch_id || !payload_hash) {
+    return { ok: false, error: "missing_args" };
+  }
+
+  const supabase = createServiceRoleClient();
+
+  const { data: pitch, error: pitchErr } = await supabase
+    .from("pitches")
+    .select("id, user_id, draft, subject, status")
+    .eq("id", pitch_id)
+    .single();
+
+  if (pitchErr || !pitch) return { ok: false, error: "not_found" };
+  if (pitch.user_id !== user_id) return { ok: false, error: "forbidden" };
+  if (pitch.status !== "draft") return { ok: false, error: "not_draft" };
+
+  const expected = computePayloadHash({
+    id: pitch.id,
+    subject: pitch.subject ?? "",
+    draft: pitch.draft,
+  });
+  if (expected !== payload_hash) return { ok: false, error: "stale_draft" };
+
+  const now = new Date().toISOString();
+
+  const { error: approvalErr } = await supabase.from("approvals").insert({
+    user_id,
+    action_type: "pitch.send",
+    resource_type: "pitches",
+    resource_id: pitch.id,
+    payload_hash,
+    verified_payload_hash: expected,
+    status: "approved",
+    actor_platform,
+    decided_at: now,
+  });
+  if (approvalErr) return { ok: false, error: approvalErr.message };
+
+  await supabase
+    .from("pitches")
+    .update({ status: "approved", approved_at: now })
+    .eq("id", pitch.id);
+
+  await supabase.from("audit_log").insert({
+    user_id,
+    actor: "user",
+    action: "pitch.approved",
+    resource_type: "pitches",
+    resource_id: pitch.id,
+    metadata: { payload_hash, actor_platform },
+  });
+
+  await inngest.send({
+    name: "pitch/approved",
+    data: { pitch_id: pitch.id, user_id },
+  });
+
+  return { ok: true };
+}
+
+async function rejectPitch(args: Args): Promise<ToolResult> {
+  const { user_id, pitch_id, actor_platform = "telegram" } = args as {
+    user_id: string;
+    pitch_id: string;
+    actor_platform?: "telegram" | "discord" | "web";
+  };
+
+  if (!user_id || !pitch_id) return { ok: false, error: "missing_args" };
+
+  const supabase = createServiceRoleClient();
+
+  const { data: pitch, error: pitchErr } = await supabase
+    .from("pitches")
+    .select("id, user_id, status")
+    .eq("id", pitch_id)
+    .single();
+
+  if (pitchErr || !pitch) return { ok: false, error: "not_found" };
+  if (pitch.user_id !== user_id) return { ok: false, error: "forbidden" };
+  if (pitch.status !== "draft") return { ok: false, error: "not_draft" };
+
+  const now = new Date().toISOString();
+
+  const { error: approvalErr } = await supabase.from("approvals").insert({
+    user_id,
+    action_type: "pitch.send",
+    resource_type: "pitches",
+    resource_id: pitch.id,
+    payload_hash: "",
+    verified_payload_hash: null,
+    status: "rejected",
+    actor_platform,
+    decided_at: now,
+  });
+  if (approvalErr) return { ok: false, error: approvalErr.message };
+
+  await supabase.from("pitches").update({ status: "rejected" }).eq("id", pitch.id);
+
+  await supabase.from("audit_log").insert({
+    user_id,
+    actor: "user",
+    action: "pitch.rejected",
+    resource_type: "pitches",
+    resource_id: pitch.id,
+    metadata: { actor_platform },
+  });
+
+  return { ok: true };
+}
+
+async function editPitch(args: Args): Promise<ToolResult> {
+  const {
+    user_id,
+    pitch_id,
+    draft,
+    subject,
+    actor_platform = "telegram",
+  } = args as {
+    user_id: string;
+    pitch_id: string;
+    draft?: string;
+    subject?: string;
+    actor_platform?: "telegram" | "discord" | "web";
+  };
+
+  if (!user_id || !pitch_id) return { ok: false, error: "missing_args" };
+  if (draft === undefined && subject === undefined) {
+    return { ok: false, error: "nothing_to_edit" };
+  }
+
+  const supabase = createServiceRoleClient();
+
+  const { data: pitch, error: pitchErr } = await supabase
+    .from("pitches")
+    .select("id, user_id, draft, subject, status")
+    .eq("id", pitch_id)
+    .single();
+
+  if (pitchErr || !pitch) return { ok: false, error: "not_found" };
+  if (pitch.user_id !== user_id) return { ok: false, error: "forbidden" };
+  if (pitch.status !== "draft") return { ok: false, error: "not_draft" };
+
+  const newSubject = subject ?? pitch.subject ?? "";
+  const newDraft = draft ?? pitch.draft;
+  const newHash = computePayloadHash({
+    id: pitch.id,
+    subject: newSubject,
+    draft: newDraft,
+  });
+
+  const { error: updateErr } = await supabase
+    .from("pitches")
+    .update({ subject: newSubject, draft: newDraft, payload_hash: newHash })
+    .eq("id", pitch.id);
+  if (updateErr) return { ok: false, error: updateErr.message };
+
+  await supabase.from("audit_log").insert({
+    user_id,
+    actor: "user",
+    action: "pitch.edited",
+    resource_type: "pitches",
+    resource_id: pitch.id,
+    metadata: { actor_platform },
+  });
+
+  return { ok: true, payload_hash: newHash };
+}
+
+// ---------------------------------------------------------------------------
 // Bind tools
 // ---------------------------------------------------------------------------
 
@@ -227,11 +471,67 @@ async function bindDiscord(args: Args): Promise<ToolResult> {
 }
 
 // ---------------------------------------------------------------------------
-// Stubs (filled in Steps 6d–6e)
+// notifyAgent — push a pitch_drafted notification + approve/reject buttons
+// to every chat platform the user has bound. Generates short-lived
+// chat_callback_tokens so the buttons embed only an opaque token.
 // ---------------------------------------------------------------------------
+async function notifyAgent(args: Args): Promise<ToolResult> {
+  const { user_id, kind, payload } = args as {
+    user_id: string;
+    kind: string;
+    payload: Record<string, unknown>;
+  };
 
-function notImplemented(): ToolResult {
-  return { ok: false, error: "not_implemented" };
+  if (!user_id || !kind || !payload) return { ok: false, error: "missing_args" };
+  if (kind !== "pitch_drafted") return { ok: false, error: "unknown_kind" };
+
+  const pitch_id = payload.pitch_id as string;
+  const payload_hash = payload.payload_hash as string;
+  const subject = (payload.subject as string) ?? "";
+  const body = (payload.body as string) ?? "";
+  const score = payload.score as number | undefined;
+
+  if (!pitch_id || !payload_hash) return { ok: false, error: "invalid_payload" };
+
+  const supabase = createServiceRoleClient();
+
+  const { data: profile, error: profileErr } = await supabase
+    .from("profiles")
+    .select("telegram_user_id, discord_user_id")
+    .eq("id", user_id)
+    .single();
+  if (profileErr || !profile) return { ok: false, error: "profile_not_found" };
+
+  const platformsNotified: string[] = [];
+
+  if (profile.telegram_user_id) {
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const approveToken = randomUUID().replace(/-/g, "");
+    const rejectToken = randomUUID().replace(/-/g, "");
+
+    const { error: tokenErr } = await supabase.from("chat_callback_tokens").insert([
+      { token: approveToken, user_id, pitch_id, payload_hash, action: "approve", expires_at: expiresAt },
+      { token: rejectToken, user_id, pitch_id, payload_hash, action: "reject", expires_at: expiresAt },
+    ]);
+    if (tokenErr) return { ok: false, error: tokenErr.message };
+
+    const subjectLine = subject ? `<b>${escapeHtml(subject)}</b>\n\n` : "";
+    const bodyExcerpt = body.length > 600 ? body.slice(0, 600) + "..." : body;
+    const scoreLine = typeof score === "number" ? `\n\n📊 Score: ${score}` : "";
+    const text = `📨 <b>New pitch ready for review</b>\n\n${subjectLine}${escapeHtml(bodyExcerpt)}${scoreLine}`;
+
+    await sendTelegramMessage(profile.telegram_user_id, text, [
+      [
+        { text: "✅ Approve", callback_data: `act:${approveToken}` },
+        { text: "❌ Reject", callback_data: `act:${rejectToken}` },
+      ],
+    ]);
+    platformsNotified.push("telegram");
+  }
+
+  // Discord notifications wired in Step 6d once the bot is configured.
+
+  return { ok: true, platforms: platformsNotified };
 }
 
 // ---------------------------------------------------------------------------
@@ -242,14 +542,22 @@ export const handlers: Record<string, (args: Args) => Promise<ToolResult>> = {
   runScout,
   getRecentLeads,
   getTopLead,
-  draftPitch:        async () => notImplemented(),
-  approvePitch:      async () => notImplemented(),
-  rejectPitch:       async () => notImplemented(),
-  editPitch:         async () => notImplemented(),
-  getPendingPitches: async () => notImplemented(),
+  draftPitch: async (args) => {
+    const { user_id, lead_id } = args as { user_id?: string; lead_id?: string };
+    if (!user_id || !lead_id) return { ok: false, error: "missing_args" };
+    const { ids } = await inngest.send({
+      name: "pitch/draft-requested",
+      data: { user_id, lead_id },
+    });
+    return { ok: true, job_id: ids?.[0] ?? null };
+  },
+  approvePitch,
+  rejectPitch,
+  editPitch,
+  getPendingPitches,
   bindTelegram,
   bindDiscord,
-  notifyAgent:       async () => notImplemented(),
+  notifyAgent,
 };
 
 export const toolManifests = [
@@ -294,28 +602,70 @@ export const toolManifests = [
   },
   {
     name: "draftPitch",
-    description: "Draft a pitch for a lead (not yet implemented).",
-    inputSchema: { type: "object", properties: {}, required: [] },
+    description: "Trigger a draft-pitch run for a lead. Worker fills in the pitches row + payload_hash.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        user_id: { type: "string" },
+        lead_id: { type: "string" },
+      },
+      required: ["user_id", "lead_id"],
+    },
   },
   {
     name: "approvePitch",
-    description: "Approve a pitch (not yet implemented).",
-    inputSchema: { type: "object", properties: {}, required: [] },
+    description: "Approve a draft pitch. Verifies payload_hash, writes approval + audit_log, fires pitch/approved.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        user_id: { type: "string" },
+        pitch_id: { type: "string" },
+        payload_hash: { type: "string" },
+        actor_platform: { type: "string", enum: ["telegram", "discord", "web"] },
+      },
+      required: ["user_id", "pitch_id", "payload_hash"],
+    },
   },
   {
     name: "rejectPitch",
-    description: "Reject a pitch (not yet implemented).",
-    inputSchema: { type: "object", properties: {}, required: [] },
+    description: "Reject a draft pitch.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        user_id: { type: "string" },
+        pitch_id: { type: "string" },
+        actor_platform: { type: "string", enum: ["telegram", "discord", "web"] },
+      },
+      required: ["user_id", "pitch_id"],
+    },
   },
   {
     name: "editPitch",
-    description: "Edit a pitch draft (not yet implemented).",
-    inputSchema: { type: "object", properties: {}, required: [] },
+    description: "Edit a draft pitch's subject and/or body. Recomputes payload_hash.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        user_id: { type: "string" },
+        pitch_id: { type: "string" },
+        subject: { type: "string" },
+        draft: { type: "string" },
+        actor_platform: { type: "string", enum: ["telegram", "discord", "web"] },
+      },
+      required: ["user_id", "pitch_id"],
+    },
   },
   {
     name: "getPendingPitches",
-    description: "Get pitches awaiting approval (not yet implemented).",
-    inputSchema: { type: "object", properties: {}, required: [] },
+    description: "Get pitches awaiting approval for the user.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        platform: { type: "string" },
+        platform_user_id: { type: "string" },
+        limit: { type: "number" },
+      },
+      required: ["platform", "platform_user_id"],
+    },
   },
   {
     name: "bindTelegram",
@@ -343,13 +693,23 @@ export const toolManifests = [
   },
   {
     name: "notifyAgent",
-    description: "Worker → Gateway: push a notification to a user's chat session.",
+    description: "Worker → chat surfaces: push a pitch_drafted notification with approve/reject buttons.",
     inputSchema: {
       type: "object",
       properties: {
         user_id: { type: "string" },
-        kind: { type: "string" },
-        payload: { type: "object" },
+        kind: { type: "string", enum: ["pitch_drafted"] },
+        payload: {
+          type: "object",
+          properties: {
+            pitch_id: { type: "string" },
+            payload_hash: { type: "string" },
+            subject: { type: "string" },
+            body: { type: "string" },
+            score: { type: "number" },
+          },
+          required: ["pitch_id", "payload_hash"],
+        },
       },
       required: ["user_id", "kind", "payload"],
     },

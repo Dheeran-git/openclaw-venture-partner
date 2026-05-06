@@ -25,8 +25,9 @@ Read it at the start of every session. When this file and the build guide disagr
 
 - **Phase 1 (Foundations):** complete.
 - **Phase 2 (Scout pipeline):** complete.
-- **Phase 2.5 (Auth + RLS cutover):** complete. Real Supabase Auth, 3-step onboarding, middleware session guard, `normalizeSupabaseUrl` in all SSR clients, `DEMO_USER_ID` removed, migrations 0006 (drop demo seed) and 0007 (RLS policies) ready to apply. Run `pnpm --filter web test:isolation` after applying migrations to verify two-account isolation.
-- **Phase 3 (HITL approval flow):** next. See section 11+ of the build guide.
+- **Phase 2.5 (Auth + RLS cutover):** complete.
+- **Phase 3 (HITL approval flow):** complete (2026-05-06). Migrations 0009 + 0010 applied. Pitch drafting, two-call streaming PitchCard, web approve/reject/edit routes, Resend send via sandbox, MCP server with shared-secret + rate-limit auth, all 6 skills + `openclaw.config.json`, `/settings/connect` binding flow, standalone Telegram webhook (Gateway free-tier OOM workaround), `notifyAgent` push with inline-keyboard approval, `/pitches` list view, real Pitches Sent stat card, sidebar Pitches link active. Discord channel + tests deferred to Phase 4 follow-up.
+- **Phase 4 (Layer 2 proof-of-value):** next. See build guide.
 
 ## Repo orientation
 
@@ -57,4 +58,4 @@ If the build guide doesn't cover something, surface to the owner before implemen
 
 ---
 
-*This file is intentionally thin. The room is `PRODUCTION_BUILD_GUIDE.md`. Last updated: Phase 2.5 complete (2026-05-04).*
+*This file is intentionally thin. The room is `PRODUCTION_BUILD_GUIDE.md`. Last updated: Phase 3 complete (2026-05-06).*

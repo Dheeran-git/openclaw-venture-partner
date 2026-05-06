@@ -1,6 +1,7 @@
 import { createServiceRoleClient } from "@openclaw/db";
 import { draftPitch as runDraftPitch, computePayloadHash } from "@openclaw/agent/drafting";
 import type { DraftingLead, DraftingProfile } from "@openclaw/agent/drafting";
+import { handlers as mcpHandlers } from "@openclaw/agent/mcp-tools";
 
 import { inngest } from "../inngest";
 
@@ -71,9 +72,7 @@ export const draftPitch = inngest.createFunction(
       })
     );
 
-    const pitchId = await step.run("insert-pitch", async () => {
-      // Generate the UUID client-side so we can compute payload_hash before
-      // the row exists, avoiding a two-round-trip update.
+    const inserted = await step.run("insert-pitch", async () => {
       const id = crypto.randomUUID();
       const payload_hash = computePayloadHash({
         id,
@@ -101,9 +100,22 @@ export const draftPitch = inngest.createFunction(
         throw new Error(`Failed to insert pitch: ${error.message}`);
       }
 
-      return id;
+      return { pitch_id: id, payload_hash };
     });
 
-    return { pitch_id: pitchId };
+    await step.run("notify-agent", async () => {
+      await mcpHandlers.notifyAgent!({
+        user_id,
+        kind: "pitch_drafted",
+        payload: {
+          pitch_id: inserted.pitch_id,
+          payload_hash: inserted.payload_hash,
+          subject: output.subject,
+          body: output.body,
+        },
+      });
+    });
+
+    return { pitch_id: inserted.pitch_id };
   }
 );

@@ -22,20 +22,21 @@ interface NavItem {
   count?: string;
   live?: boolean;
   future?: boolean;
+  href?: string;
 }
 
 function buildPrimary(inboxCount: number, pitchesCount: number): NavItem[] {
   return [
-    { id: "inbox", icon: Inbox, label: "Inbox", count: inboxCount > 0 ? String(inboxCount) : undefined },
+    { id: "inbox", icon: Inbox, label: "Inbox", count: inboxCount > 0 ? String(inboxCount) : undefined, href: "/" },
     { id: "scout", icon: Search, label: "Scout", count: "running", live: true, future: true },
-    { id: "pitches", icon: FileText, label: "Pitches", count: pitchesCount > 0 ? String(pitchesCount) : undefined, future: true },
+    { id: "pitches", icon: FileText, label: "Pitches", count: pitchesCount > 0 ? String(pitchesCount) : undefined, href: "/pitches" },
     { id: "clients", icon: Users, label: "Clients", future: true },
   ];
 }
 
 const TOOLS: NavItem[] = [
   { id: "templates", icon: LayoutGrid, label: "Templates", future: true },
-  { id: "settings", icon: Settings, label: "Settings" },
+  { id: "settings", icon: Settings, label: "Settings", href: "/settings/connect" },
 ];
 
 export function Sidebar({
@@ -84,7 +85,10 @@ export function Sidebar({
             key={item.id}
             item={item}
             active={active === item.id}
-            onClick={() => setActive(item.id)}
+            onClick={() => {
+              setActive(item.id);
+              if (item.href) router.push(item.href as never);
+            }}
           />
         ))}
       </div>
@@ -97,11 +101,8 @@ export function Sidebar({
             item={item}
             active={active === item.id}
             onClick={() => {
-              if (item.id === "settings") {
-                router.push("/settings/connect");
-              } else {
-                setActive(item.id);
-              }
+              setActive(item.id);
+              if (item.href) router.push(item.href as never);
             }}
           />
         ))}

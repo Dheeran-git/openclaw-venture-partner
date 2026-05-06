@@ -1,4 +1,5 @@
 import { handlers } from "@openclaw/agent/mcp-tools";
+import { createServiceRoleClient } from "@openclaw/db";
 import { checkBindRateLimit, recordBindFailure } from "../../../../lib/mcp-auth";
 
 interface TgMessage {
@@ -29,6 +30,21 @@ async function sendMessage(chatId: number, text: string, extra?: Record<string, 
   });
 }
 
+async function editMessageText(chatId: number, messageId: number, text: string) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      parse_mode: "HTML",
+    }),
+  });
+}
+
 async function answerCbq(id: string, text?: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return;
@@ -53,17 +69,82 @@ export async function POST(req: Request) {
     return new Response("Bad Request", { status: 400 });
   }
 
-  // Inline keyboard callbacks (Step 6e: pitch approve/reject)
+  // ─── Inline-button callbacks (approve / reject from Telegram) ─────────────
   if (update.callback_query) {
-    const { id: cbId, from, data } = update.callback_query;
-    const chatId = update.callback_query.message?.chat.id ?? from.id;
-    if (data?.startsWith("act:")) {
-      await answerCbq(cbId, "Processing…");
-      // Token resolution implemented in Step 6e
-      await sendMessage(chatId, "Pitch approval via Telegram is coming in the next update.");
-    } else {
+    const { id: cbId, data } = update.callback_query;
+    const cbMessage = update.callback_query.message;
+    const chatId = cbMessage?.chat.id ?? update.callback_query.from.id;
+
+    if (!data?.startsWith("act:")) {
       await answerCbq(cbId);
+      return new Response("OK");
     }
+
+    const token = data.slice(4);
+    await answerCbq(cbId, "Processing…");
+
+    const supabase = createServiceRoleClient();
+    const { data: cbToken, error: cbErr } = await supabase
+      .from("chat_callback_tokens")
+      .select("user_id, pitch_id, payload_hash, action, expires_at, used_at")
+      .eq("token", token)
+      .single();
+
+    if (cbErr || !cbToken) {
+      await sendMessage(chatId, "❌ This action link is invalid.");
+      return new Response("OK");
+    }
+    if (cbToken.used_at) {
+      await sendMessage(chatId, "⚠️ This action has already been completed.");
+      return new Response("OK");
+    }
+    if (new Date(cbToken.expires_at) < new Date()) {
+      await sendMessage(chatId, "⌛ This action link has expired. Use the dashboard.");
+      return new Response("OK");
+    }
+
+    let result: { ok: boolean; error?: string };
+    if (cbToken.action === "approve") {
+      result = (await handlers.approvePitch!({
+        user_id: cbToken.user_id,
+        pitch_id: cbToken.pitch_id,
+        payload_hash: cbToken.payload_hash,
+        actor_platform: "telegram",
+      })) as { ok: boolean; error?: string };
+    } else if (cbToken.action === "reject") {
+      result = (await handlers.rejectPitch!({
+        user_id: cbToken.user_id,
+        pitch_id: cbToken.pitch_id,
+        actor_platform: "telegram",
+      })) as { ok: boolean; error?: string };
+    } else {
+      result = { ok: false, error: "unsupported_action" };
+    }
+
+    await supabase
+      .from("chat_callback_tokens")
+      .update({ used_at: new Date().toISOString() })
+      .eq("token", token);
+
+    if (result.ok) {
+      const verb = cbToken.action === "approve" ? "approved ✅" : "rejected ❌";
+      const followup = `Pitch ${verb} via Telegram. Dashboard updated in real time.`;
+      if (cbMessage) {
+        await editMessageText(chatId, cbMessage.message_id, followup);
+      } else {
+        await sendMessage(chatId, followup);
+      }
+    } else if (result.error === "stale_draft") {
+      await sendMessage(
+        chatId,
+        "⚠️ This pitch has changed since you reviewed it. Please use the dashboard."
+      );
+    } else if (result.error === "not_draft") {
+      await sendMessage(chatId, "ℹ️ This pitch has already been actioned.");
+    } else {
+      await sendMessage(chatId, `Action failed: ${result.error ?? "unknown_error"}.`);
+    }
+
     return new Response("OK");
   }
 

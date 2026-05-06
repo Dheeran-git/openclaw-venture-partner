@@ -22,41 +22,29 @@ When an item moves to `done`, leave it in this file with a strikethrough — use
 
 These must land before submission to make the demo coherent.
 
-### A1. Telegram + Discord HITL approval flow
-**What:** Telegram and Discord bots both fully wired with the approval flow. Inline keyboards (Telegram) and message components with embeds (Discord). `payload_hash` verification on every approval. Round-trip from "tap Approve in chat" → "pitch sent."
-**Why deferred:** Phase 2 ended with the architectural foundation. This is the visceral demo moment, owned by Phase 3.
-**Owner / Phase:** Claude Code, Phase 3 step 6 (split into 6a–6e).
-**Status:** open
+### ~~A1. Telegram HITL approval flow~~
+~~**What:** Telegram bot wired with the approval flow. Inline keyboards. `payload_hash` verification on every approval. Round-trip from "tap Approve in chat" → "pitch sent."~~
+**Status:** done — 2026-05-06. Standalone webhook at `/api/telegram/webhook` (Gateway free-tier OOM workaround), `notifyAgent` MCP tool generates short-lived `chat_callback_tokens` and pushes inline-keyboard messages, callback resolver dispatches to `approvePitch` / `rejectPitch` MCP handlers with `actor_platform: 'telegram'`. Discord adapter is structurally ready but Discord bot setup deferred to Phase 4 follow-up.
 
-### A2. Pitch drafting prompt and pipeline
-**What:** `packages/agent/src/prompts/draft-pitch.md` with rubric and few-shot examples. `DraftPitchOutput` Zod schema. `draftPitch()` function calling LLM with profile + lead + (optional) client memory.
-**Why deferred:** Phase 3 owns it. Mirrors the Phase 2 scoring prompt structure.
-**Owner / Phase:** Claude Code, Phase 3 step 1.
-**Status:** open
+### ~~A2. Pitch drafting prompt and pipeline~~
+~~**What:** `packages/agent/src/prompts/draft-pitch.md` with rubric and few-shot examples. `DraftPitchOutput` Zod schema. `draftPitch()` function calling LLM with profile + lead + (optional) client memory.~~
+**Status:** done — Phase 3 step 1.
 
-### A3. Pitch card with approval bar in dashboard
-**What:** Port `openclaw-design-system/project/ui_kits/dashboard/PitchCard.jsx` to TSX. Replace the "Pitch drafting in Phase 3" placeholder in LeadDetail. Wire to `llm.stream()` for character-by-character streaming.
-**Why deferred:** Was deferred from Phase 2 step 7 to keep that phase scoped to scout pipeline only.
-**Owner / Phase:** Claude Code, Phase 3 step 3.
-**Status:** open
+### ~~A3. Pitch card with approval bar in dashboard~~
+~~**What:** Port `openclaw-design-system/project/ui_kits/dashboard/PitchCard.jsx` to TSX. Replace the "Pitch drafting in Phase 3" placeholder in LeadDetail.~~
+**Status:** done — Phase 3 step 3. Streaming via Realtime subscription on `pitches:user_id=eq.{user_id}`.
 
-### A4. OpenClaw Gateway deployment (dev + prod)
-**What:** Deploy OpenClaw via Railway one-click template. Dev Gateway: `openclaw-vp-dev`. Prod Gateway: `openclaw-vp-prod`. Save URL and `OPENCLAW_GATEWAY_TOKEN` to `.env`.
-**Why deferred:** New requirement after the OpenClaw audit revealed it's a deployable application, not an npm library. Hard prerequisite for Phase 3 chat work.
-**Owner / Phase:** Claude Code, Phase 3 step 0 (~30 min).
-**Status:** open
+### ~~A4. OpenClaw Gateway deployment (dev + prod)~~
+~~**What:** Deploy OpenClaw via Railway one-click template.~~
+**Status:** done (modified) — 2026-05-06. Dev Gateway up on Railway. Telegram channel disabled (free-tier 512MB OOM); standalone webhook used for Telegram. Gateway retains the skills + MCP routing for cross-platform features and any future paid-tier expansion.
 
-### A5. MCP server endpoint at /api/mcp
-**What:** Build `apps/web/app/api/mcp/route.ts`. Authenticate via `MCP_SHARED_SECRET`. Implement at least 8 tools: `runScout`, `getRecentLeads`, `getTopLead`, `draftPitch`, `approvePitch`, `rejectPitch`, `bindTelegram`, `bindDiscord`, `notifyAgent`. Each uses Zod schema validation.
-**Why deferred:** New requirement from the OpenClaw audit. Replaces the previously-imagined "tools registered as TS imports" model.
-**Owner / Phase:** Claude Code, Phase 3 step 6a (~30 min).
-**Status:** open
+### ~~A5. MCP server endpoint at /api/mcp~~
+~~**What:** Build `apps/web/app/api/mcp/route.ts`. Authenticate via `MCP_SHARED_SECRET`.~~
+**Status:** done — Phase 3 step 6a. All 11 tools implemented (`runScout`, `getRecentLeads`, `getTopLead`, `draftPitch`, `approvePitch`, `rejectPitch`, `editPitch`, `getPendingPitches`, `bindTelegram`, `bindDiscord`, `notifyAgent`).
 
-### A6. binding_codes table and chat-platform binding flow
-**What:** Migration 0005 includes `binding_codes` table. `/settings/connect` page on dashboard generates 6-digit code, user sends to bot, `bindTelegram` / `bindDiscord` MCP tool validates and writes to `profiles.{telegram,discord}_user_id`.
-**Why deferred:** New requirement. Without binding, OpenClaw can't identify which `user_id` an incoming Telegram/Discord message belongs to.
-**Owner / Phase:** Claude Code, Phase 3 step 6c-6d.
-**Status:** open
+### ~~A6. binding_codes table and chat-platform binding flow~~
+~~**What:** `binding_codes` table. `/settings/connect` page generates 6-digit code, `bindTelegram` MCP tool validates and writes to `profiles.telegram_user_id`.~~
+**Status:** done — Phase 3 step 6c. Migration 0010 applied. `bindDiscord` ready but Discord bot setup deferred.
 
 ### A7. Layer 2 proof-of-value (Lighthouse audit)
 **What:** Worker function that runs `lighthouse` against a target URL, stores result in `proof_artifacts`. Pitch prompt updated to reference proof concretely. PitchCard shows proof preview.
@@ -101,16 +89,14 @@ These didn't get fully wired in Phase 2 but aren't blocking anything immediate.
 **Status:** open
 
 ### B3. Sidebar nav items beyond Inbox
-**What:** Scout, Pitches, Clients, Templates, Settings are dimmed. Pitches activates in Phase 3. Clients activates in Phase 5. Templates and Settings stay dimmed unless explicitly built.
-**Why deferred:** Most have no underlying data until later phases create it. Templates and Settings are Phase 6 polish.
+**What:** Scout, Pitches, Clients, Templates, Settings are dimmed. ~~Pitches activates in Phase 3.~~ Clients activates in Phase 5. Templates and Scout stay dimmed unless explicitly built. Settings already navigates to `/settings/connect`.
+**Status:** Pitches done (2026-05-06) — un-dimmed and routes to `/pitches`. Clients/Templates/Scout still open.
 **Owner / Phase:** Claude Code, by phase as data appears.
-**Status:** open
 
 ### B4. Stat cards real values for Pitches Sent, Reply Rate, Hours Saved
-**What:** Currently `—`. Will become real numbers as Phase 3 (pitches) and Phase 5 (replies) produce data. "Hours Saved" needs a heuristic — TBD.
-**Why deferred:** Wiring exists; just no data flowing through yet.
-**Owner / Phase:** Phase 3 step 8 partially; Phase 5 finishes; Phase 6 for "Hours Saved" formula.
-**Status:** open
+**What:** ~~Currently `—`.~~ Pitches Sent now real (live count via `useStats` hook with realtime subscription). Reply Rate stays `—` until Phase 5. Hours Saved stays `—` until heuristic decided in Phase 6.
+**Status:** Pitches Sent done (Phase 3). Reply Rate / Hours Saved still open.
+**Owner / Phase:** Phase 5 (Reply Rate); Phase 6 (Hours Saved formula).
 
 ### B5. Week-over-week deltas on stat cards
 **What:** Currently dropped from the design entirely. Requires either a snapshot job (daily counts table) or sliding-window queries.
@@ -261,6 +247,8 @@ Items here are decisions made during planning sessions that affect future work. 
 - **2026-05-04 — Phase 2.5 vs Phase 3 sequencing is timeline-dependent.** Build-guide section 11.0 documents the tradeoff. If hackathon deadline ≤7 days, Phase 3 on DEMO_USER_ID first, then Phase 2.5 as first post-hackathon work. Otherwise Phase 2.5 first.
 - **2026-05-04 — Zyte called directly from Inngest worker, not via OpenClaw.** Earlier framing was incorrect. Scraping is worker-side; OpenClaw only sees the result of a scout when chat asks for it.
 - **2026-05-04 — Phase 2.5 complete (auth + RLS).** Real Supabase Auth, 3-step onboarding, middleware session guard, `normalizeSupabaseUrl` applied everywhere, migrations 0006 + 0007 written, DEMO_USER_ID removed from codebase. Two-account isolation verified via `pnpm --filter web test:isolation`. Phase 3 is the next phase.
+- **2026-05-06 — Telegram via standalone webhook, not OpenClaw Gateway.** Railway free tier (512MB) OOMs when the Gateway boots its Telegram bot library, so Telegram is owned by a thin Vercel route at `/api/telegram/webhook` that calls `handlers.bindTelegram` / `approvePitch` / `rejectPitch` directly. The Gateway stays in the architecture for skills + MCP + Discord/Slack/WhatsApp; this is a pragmatic split, not an abandonment of OpenClaw.
+- **2026-05-06 — Phase 3 complete.** End-to-end HITL approval shipped: pitch drafting, two-call streaming PitchCard, web approve/reject/edit routes, Resend send via sandbox, MCP server, all skills + Gateway config, `/settings/connect` binding, Telegram webhook + inline keyboard, `notifyAgent` push, `/pitches` list, real Pitches Sent stat. Discord channel + automated tests deferred to follow-up. Phase 4 (Layer 2 proof-of-value) is next.
 
 ---
 
@@ -278,4 +266,4 @@ Items here are decisions made during planning sessions that affect future work. 
 
 ---
 
-*Last updated: 2026-05-04 — Phase 2.5 complete. C1 marked done.*
+*Last updated: 2026-05-06 — Phase 3 complete. A1–A6 marked done. B3/B4 partially done.*

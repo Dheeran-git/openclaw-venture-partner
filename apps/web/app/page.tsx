@@ -15,6 +15,7 @@ import { useSession } from "../lib/auth";
 
 export default function Page() {
   const session = useSession();
+  const [leadParam, setLeadParam] = useState<string | undefined>();
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [running, setRunning] = useState(false);
   const { leads, loading } = useLeads(session?.user.id);
@@ -29,9 +30,27 @@ export default function Page() {
   ];
   const hasAutoSelected = useRef(false);
 
-  // Pre-select the highest-scored lead once leads first load.
+  // Read ?lead=<id> on mount (client-side only — avoids the static-prerender
+  // Suspense requirement of useSearchParams). When present, jump straight
+  // to that lead's detail panel and skip the highest-score auto-select.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const param = new URLSearchParams(window.location.search).get("lead");
+    if (param) {
+      setLeadParam(param);
+      setSelectedId(param);
+      hasAutoSelected.current = true;
+    }
+  }, []);
+
+  // Pre-select the highest-scored lead once leads first load,
+  // unless a ?lead=... query param already provided one.
   useEffect(() => {
     if (hasAutoSelected.current || leads.length === 0) return;
+    if (leadParam) {
+      hasAutoSelected.current = true;
+      return;
+    }
     const best = leads.reduce<(typeof leads)[0] | null>((acc, l) => {
       if (acc === null) return l;
       if (l.score === null) return acc;
@@ -42,7 +61,7 @@ export default function Page() {
       setSelectedId(best.id);
       hasAutoSelected.current = true;
     }
-  }, [leads]);
+  }, [leads, leadParam]);
 
   async function handleRunScout(query: string) {
     if (running) return;
