@@ -10,7 +10,8 @@
     "./llm": "./src/llm/client.ts",
     "./llm/types": "./src/llm/types.ts",
     "./scoring": "./src/scoring/index.ts",
-    "./drafting": "./src/drafting/index.ts"
+    "./drafting": "./src/drafting/index.ts",
+    "./mcp-tools": "./src/mcp-tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -24,6 +25,7 @@
     "@openclaw/db": "workspace:*",
     "@openclaw/shared": "workspace:*",
     "dotenv": "16.4.5",
+    "inngest": "^3.34.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

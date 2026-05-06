@@ -15,7 +15,8 @@
     "@openclaw/scraping": "workspace:*",
     "@openclaw/shared": "workspace:*",
     "dotenv": "16.4.5",
-    "inngest": "^3.34.0"
+    "inngest": "^3.34.0",
+    "resend": "^6.12.2"
   },
   "devDependencies": {
     "tsx": "4.19.2",

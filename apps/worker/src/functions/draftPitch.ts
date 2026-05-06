@@ -91,6 +91,10 @@ export const draftPitch = inngest.createFunction(
           subject: output.subject,
           status: "draft",
           payload_hash,
+          expected_signal: {
+            reasoning: output.reasoning,
+            confidence: output.confidence,
+          },
         });
 
       if (error) {

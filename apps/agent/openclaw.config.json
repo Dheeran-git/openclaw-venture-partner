@@ -1,0 +1,53 @@
+{
+  "llm": {
+    "providers": [
+      {
+        "id": "openrouter",
+        "apiKeyEnv": "OPENROUTER_API_KEY",
+        "models": ["openrouter/auto"]
+      },
+      {
+        "id": "gemini",
+        "apiKeyEnv": "GEMINI_API_KEY",
+        "models": ["gemini-2.0-flash"]
+      }
+    ],
+    "defaultProvider": "openrouter",
+    "defaultModel": "openrouter/auto"
+  },
+  "mcp": {
+    "servers": [
+      {
+        "name": "openclaw-vp",
+        "url": "${VERCEL_PREVIEW_URL}/api/mcp",
+        "authHeader": "Bearer ${MCP_SHARED_SECRET}",
+        "tools": [
+          "runScout",
+          "getRecentLeads",
+          "getTopLead",
+          "draftPitch",
+          "approvePitch",
+          "rejectPitch",
+          "editPitch",
+          "getPendingPitches",
+          "bindTelegram",
+          "bindDiscord",
+          "notifyAgent"
+        ]
+      }
+    ]
+  },
+  "channels": {
+    "telegram": {
+      "enabled": false,
+      "tokenEnv": "TELEGRAM_BOT_TOKEN"
+    },
+    "discord": {
+      "enabled": false,
+      "tokenEnv": "DISCORD_BOT_TOKEN"
+    }
+  },
+  "gateway": {
+    "tokenEnv": "OPENCLAW_GATEWAY_TOKEN"
+  }
+}

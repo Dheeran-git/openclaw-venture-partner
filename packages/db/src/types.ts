@@ -37,6 +37,9 @@ export interface Database {
           past_clients: Json;
           availability: string | null;
           timezone: string;
+          telegram_user_id: number | null;
+          discord_user_id: string | null;
+          slack_user_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -49,6 +52,9 @@ export interface Database {
           past_clients?: Json;
           availability?: string | null;
           timezone?: string;
+          telegram_user_id?: number | null;
+          discord_user_id?: string | null;
+          slack_user_id?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
@@ -193,6 +199,75 @@ export interface Database {
           "id" | "created_at"
         > & { id?: string; created_at?: string };
         Update: Partial<Database["public"]["Tables"]["llm_calls"]["Insert"]>;
+      };
+      audit_log: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          actor: string;
+          action: string;
+          resource_type: string | null;
+          resource_id: string | null;
+          metadata: Json | null;
+          ip_addr: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          actor: string;
+          action: string;
+          resource_type?: string | null;
+          resource_id?: string | null;
+          metadata?: Json | null;
+          ip_addr?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["audit_log"]["Insert"]>;
+      };
+      binding_codes: {
+        Row: {
+          code: string;
+          user_id: string;
+          platform: "telegram" | "discord" | "slack" | "whatsapp";
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          code: string;
+          user_id: string;
+          platform: "telegram" | "discord" | "slack" | "whatsapp";
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["binding_codes"]["Insert"]>;
+      };
+      chat_callback_tokens: {
+        Row: {
+          token: string;
+          user_id: string;
+          pitch_id: string;
+          payload_hash: string;
+          action: "approve" | "reject" | "edit";
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          token: string;
+          user_id: string;
+          pitch_id: string;
+          payload_hash: string;
+          action: "approve" | "reject" | "edit";
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["chat_callback_tokens"]["Insert"]>;
       };
     };
     Views: Record<string, never>;

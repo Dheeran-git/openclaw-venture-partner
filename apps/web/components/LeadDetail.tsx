@@ -4,6 +4,7 @@ import { X, ExternalLink } from "lucide-react";
 import { useLeadDetail } from "../hooks/useLeadDetail";
 import { ageFromIso } from "../lib/leadAdapters";
 import { SOURCE_DOT, SOURCE_LABEL, type LeadSource } from "../lib/fixtures";
+import { PitchCard } from "./lead-detail/PitchCard";
 
 export function LeadDetail({
   leadId,
@@ -130,22 +131,11 @@ export function LeadDetail({
           )}
         </div>
 
-        {/* PITCH DRAFT placeholder — Phase 3 */}
+        {/* PITCH DRAFT */}
         <div className="oc-section-label" style={{ marginTop: 24 }}>
           PITCH DRAFT
         </div>
-        <div
-          style={{
-            background: "var(--bg-card)",
-            border: "1px dashed var(--border-subtle)",
-            borderRadius: 12,
-            padding: "14px 16px",
-            fontSize: 12,
-            color: "var(--fg-dim)",
-          }}
-        >
-          Pitch drafting in Phase 3.
-        </div>
+        <PitchCard leadId={detail.id} />
 
         {/* SIGNAL section */}
         <div className="oc-section-label" style={{ marginTop: 24 }}>

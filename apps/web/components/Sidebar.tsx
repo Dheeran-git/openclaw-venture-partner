@@ -35,7 +35,7 @@ function buildPrimary(inboxCount: number, pitchesCount: number): NavItem[] {
 
 const TOOLS: NavItem[] = [
   { id: "templates", icon: LayoutGrid, label: "Templates", future: true },
-  { id: "settings", icon: Settings, label: "Settings", future: true },
+  { id: "settings", icon: Settings, label: "Settings" },
 ];
 
 export function Sidebar({
@@ -96,7 +96,13 @@ export function Sidebar({
             key={item.id}
             item={item}
             active={active === item.id}
-            onClick={() => setActive(item.id)}
+            onClick={() => {
+              if (item.id === "settings") {
+                router.push("/settings/connect");
+              } else {
+                setActive(item.id);
+              }
+            }}
           />
         ))}
       </div>
