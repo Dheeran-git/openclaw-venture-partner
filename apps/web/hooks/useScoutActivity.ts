@@ -35,7 +35,16 @@ export function useScoutActivity(userId?: string): UseScoutActivityResult {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
 
   const pushOptimistic = useCallback((event: ActivityEvent) => {
-    setEvents((prev) => [event, ...prev].slice(0, MAX_BUFFER));
+    setEvents((prev) => {
+      // If the prior buffer has any events, insert a divider so successive
+      // scout runs are visually separated.
+      const divider: ActivityEvent | null =
+        prev.length > 0 && prev[0]?.kind !== "divider"
+          ? { kind: "divider", text: "new run", meta: "" }
+          : null;
+      const next = divider ? [event, divider, ...prev] : [event, ...prev];
+      return next.slice(0, MAX_BUFFER);
+    });
   }, []);
 
   useEffect(() => {

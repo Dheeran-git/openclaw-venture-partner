@@ -46,23 +46,17 @@ These must land before submission to make the demo coherent.
 ~~**What:** `binding_codes` table. `/settings/connect` page generates 6-digit code, `bindTelegram` MCP tool validates and writes to `profiles.telegram_user_id`.~~
 **Status:** done — Phase 3 step 6c. Migration 0010 applied. `bindDiscord` ready but Discord bot setup deferred.
 
-### A7. Layer 2 proof-of-value (Lighthouse audit)
-**What:** Worker function that runs `lighthouse` against a target URL, stores result in `proof_artifacts`. Pitch prompt updated to reference proof concretely. PitchCard shows proof preview.
-**Why deferred:** Phase 4. The "wow" moment of the demo where the agent builds something real and attaches it to outreach.
-**Owner / Phase:** Claude Code, Phase 4.
-**Status:** open
+### ~~A7. Layer 2 proof-of-value (Lighthouse audit)~~
+~~**What:** Worker function that runs `lighthouse` against a target URL, stores result in `proof_artifacts`. Pitch prompt updated to reference proof concretely. PitchCard shows proof preview.~~
+**Status:** done — 2026-05-06. Migration 0012, `runLighthouseAudit` worker via Google PageSpeed Insights API (no Chromium binary), ProofCard preview, draft-pitch prompt accepts proof_context.
 
-### A8. Layer 3 negotiation (reply drafting + client memory)
-**What:** Inbound email ingestion (Resend Inbound webhook). Reply classification prompt. Reply drafting with three options. Persistent `clients.memory_md` updated diff-by-diff. Upsell detection cron.
-**Why deferred:** Phase 5. The full deal lifecycle closes here.
-**Owner / Phase:** Claude Code, Phase 5.
-**Status:** open
+### ~~A8. Layer 3 negotiation (reply drafting + client memory)~~
+~~**What:** Inbound email ingestion (Resend Inbound webhook). Reply classification prompt. Reply drafting with three options. Persistent `clients.memory_md` updated diff-by-diff. Upsell detection cron.~~
+**Status:** done — 2026-05-06. Migrations 0013/0014. classify-reply + draft-reply prompts. processInboundReply + sendApprovedReply workers. /clients UI with MemoryRenderer + ReplyCard. detectUpsells daily cron. Resend Inbound deferred to custom-domain setup; /api/email/simulate covers the free-tier demo path.
 
-### A9. Demo mode button
-**What:** A single click that runs a canned end-to-end scenario with predictable data. Critical for live-demo safety.
-**Why deferred:** Phase 6. **Don't skip this.** Live demos break; demo mode is the parachute.
-**Owner / Phase:** Claude Code, Phase 6 polish step.
-**Status:** open
+### ~~A9. Demo mode button~~
+~~**What:** A single click that runs a canned end-to-end scenario with predictable data. Critical for live-demo safety.~~
+**Status:** done — 2026-05-06. POST /api/demo/seed inserts deterministic lead + score (95) + drafted pitch + complete Lighthouse proof. Idempotent (replaces prior demo). Button at /settings/connect.
 
 ### A10. Scripted demo arc rehearsed and timed
 **What:** The 90-second demo from build-guide section 16.5. Practiced. Timed. Pre-demo setup checklist completed before judging.
@@ -76,27 +70,17 @@ These must land before submission to make the demo coherent.
 
 These didn't get fully wired in Phase 2 but aren't blocking anything immediate.
 
-### B1. Search bar in topbar
-**What:** Currently stubbed at 45% opacity. Wiring means full-text search across leads, clients, pitches. Postgres FTS backend, debounced typeahead frontend, `⌘K` shortcut.
-**Why deferred:** Real product feature; Phase 6 polish.
-**Owner / Phase:** Claude Code, Phase 6 step 5.
-**Status:** open
+### ~~B1. Search bar in topbar~~
+**Status:** done — 2026-05-06. /api/search route does ILIKE across leads.normalized + pitches.subject/draft + clients.company_name/memory_md. Debounced typeahead in `SearchBar` component. ⌘K shortcut. Postgres FTS migration deferred (ILIKE is fast enough at hackathon scale).
 
-### B2. Bell icon (notifications)
-**What:** Currently stubbed. Wiring means a notifications table, per-user feed, read/unread state, in-app feed, plus chat fanout (already wired structurally).
-**Why deferred:** Phase 6 step 6 if shipped at all. Probably skip for hackathon — there's no compelling demo value over the existing chat-platform notifications.
-**Owner / Phase:** Claude Code, Phase 6 step 6 (consider skipping).
-**Status:** open
+### ~~B2. Bell icon (notifications)~~
+**Status:** done — 2026-05-06. Migration 0015 added notifications table with RLS. `NotificationsBell` component shows unread count + dropdown feed with mark-as-read. Inserted by `draftPitch` (pitch ready) and `processInboundReply` (reply received) workers.
 
-### B3. Sidebar nav items beyond Inbox
-**What:** Scout, Pitches, Clients, Templates, Settings are dimmed. ~~Pitches activates in Phase 3.~~ Clients activates in Phase 5. Templates and Scout stay dimmed unless explicitly built. Settings already navigates to `/settings/connect`.
-**Status:** Pitches done (2026-05-06) — un-dimmed and routes to `/pitches`. Clients/Templates/Scout still open.
-**Owner / Phase:** Claude Code, by phase as data appears.
+### ~~B3. Sidebar nav items beyond Inbox~~
+**Status:** Pitches + Clients un-dimmed and routed (2026-05-06). Templates + Scout stay dimmed (Templates is Phase 6 optional that we deferred; Scout's "running" indicator is the demo affordance). Settings now goes to /settings index page.
 
 ### B4. Stat cards real values for Pitches Sent, Reply Rate, Hours Saved
-**What:** ~~Currently `—`.~~ Pitches Sent now real (live count via `useStats` hook with realtime subscription). Reply Rate stays `—` until Phase 5. Hours Saved stays `—` until heuristic decided in Phase 6.
-**Status:** Pitches Sent done (Phase 3). Reply Rate / Hours Saved still open.
-**Owner / Phase:** Phase 5 (Reply Rate); Phase 6 (Hours Saved formula).
+**Status:** Pitches Sent + Hours Saved done (2026-05-06; Hours Saved heuristic = leads * 2min + drafts * 20min + sends * 10min). Reply Rate still open until inbound replies are flowing in production (the schema supports it; just need data).
 
 ### B5. Week-over-week deltas on stat cards
 **What:** Currently dropped from the design entirely. Requires either a snapshot job (daily counts table) or sliding-window queries.
@@ -104,11 +88,8 @@ These didn't get fully wired in Phase 2 but aren't blocking anything immediate.
 **Owner / Phase:** Claude Code, Phase 6 (optional).
 **Status:** open
 
-### B6. Activity rail divider between scout runs
-**What:** Currently the buffer accumulates events from multiple runs without a visual divider. Add a subtle separator or `── new run ──` marker between runs.
-**Why deferred:** UX polish, not a bug.
-**Owner / Phase:** Claude Code, Phase 6 polish.
-**Status:** open
+### ~~B6. Activity rail divider between scout runs~~
+**Status:** done — 2026-05-06. `useScoutActivity` inserts a "new run" divider event when pushOptimistic fires on a non-empty buffer. ActivityRail renders dividers as a horizontal line + label.
 
 ### B7. "Scoring..." placeholder window for new leads
 **What:** Architecture supports it; with concurrency=5 it's so brief (~3-5s) you can barely see it. Could drop concurrency to 1 to make demo theatrics more visible.
@@ -170,11 +151,8 @@ Things explicitly pushed past the hackathon submission. Tracking them so they do
 **Owner / Phase:** Dheeran, post-launch.
 **Status:** open
 
-### C9. Per-Gateway rate limiting on /api/mcp
-**What:** Once OpenClaw is in production, the Gateway is also a client of our Next.js app. Apply rate limits per Gateway token: `/api/mcp` 60/min global, `runScout` 10/hour matching user-facing limits, `draftPitch` 30/day matching its sister route. Worker → notifyAgent uses separate `MCP_WORKER_SECRET` with looser limits.
-**Why deferred:** New requirement from the architectural revision. Phase 6 production hardening.
-**Owner / Phase:** Claude Code, Phase 6 step 2.
-**Status:** open
+### ~~C9. Per-Gateway rate limiting on /api/mcp~~
+**Status:** done — 2026-05-06. Generalized rate limiter at `apps/web/lib/rateLimit.ts` (Upstash Redis when creds set; in-memory fallback). Applied at /api/scout (10/hr per user), /api/pitches/draft (30/day per user), /api/mcp (60/min per IP plus per-tool runScout 10/hr and draftPitch 30/day per platform user).
 
 ### C10. WhatsApp / Slack chat platforms activation
 **What:** OpenClaw plugins exist; env vars in `.env.example`; `ENABLE_*=false` flags in Gateway config. Activation is flipping the flag and providing credentials. Slack: ~30 min. WhatsApp: 3-10 days due to Meta Business Verification.
@@ -210,11 +188,8 @@ Things explicitly pushed past the hackathon submission. Tracking them so they do
 **Owner / Phase:** Dheeran, Phase 7.
 **Status:** open
 
-### D5. README architecture diagram and screenshots
-**What:** The repo's README is currently a one-paragraph blurb. Before submission, expand with: system architecture diagram, technology stack, "how to run locally," "what's implemented vs stubbed," and screenshots. Judges read READMEs.
-**Why deferred:** Pre-submission polish.
-**Owner / Phase:** Claude Code + Dheeran review, Phase 7.
-**Status:** open
+### ~~D5. README architecture diagram and screenshots~~
+**Status:** done — 2026-05-06. README rewritten with 90-second demo arc, ASCII architecture diagram, tech stack, repository layout, implemented-vs-deferred matrix, run-locally section, doc index, credits.
 
 ### D6. Push CLAUDE.md and PRODUCTION_BUILD_GUIDE.md updates as we go
 **What:** Both documents evolve with the project. New architectural decisions land in the appropriate document before the session that introduces them ends.
@@ -249,6 +224,7 @@ Items here are decisions made during planning sessions that affect future work. 
 - **2026-05-04 — Phase 2.5 complete (auth + RLS).** Real Supabase Auth, 3-step onboarding, middleware session guard, `normalizeSupabaseUrl` applied everywhere, migrations 0006 + 0007 written, DEMO_USER_ID removed from codebase. Two-account isolation verified via `pnpm --filter web test:isolation`. Phase 3 is the next phase.
 - **2026-05-06 — Telegram via standalone webhook, not OpenClaw Gateway.** Railway free tier (512MB) OOMs when the Gateway boots its Telegram bot library, so Telegram is owned by a thin Vercel route at `/api/telegram/webhook` that calls `handlers.bindTelegram` / `approvePitch` / `rejectPitch` directly. The Gateway stays in the architecture for skills + MCP + Discord/Slack/WhatsApp; this is a pragmatic split, not an abandonment of OpenClaw.
 - **2026-05-06 — Phase 3 complete.** End-to-end HITL approval shipped: pitch drafting, two-call streaming PitchCard, web approve/reject/edit routes, Resend send via sandbox, MCP server, all skills + Gateway config, `/settings/connect` binding, Telegram webhook + inline keyboard, `notifyAgent` push, `/pitches` list, real Pitches Sent stat. Discord channel + automated tests deferred to follow-up. Phase 4 (Layer 2 proof-of-value) is next.
+- **2026-05-06 — Phases 4–7 complete.** Lighthouse proof-of-value via Google PageSpeed Insights API (no Chromium binary). Reply ingestion with classify+draft 3 options, `/clients` UI with MemoryRenderer + ReplyCard, daily `detectUpsells` cron. Demo-mode parachute, generalized Upstash+memory rate limiter, SDK-free Sentry+PostHog shims, ILIKE-based search with ⌘K, real notifications system, /settings index + profile editor + data export/import + danger zone, Hours-saved heuristic, activity rail dividers, skip-to-content a11y. Vitest suite (15 passing) including payload_hash determinism + classifyReply schema. Playwright specs for pitch-approve happy path + 409 stale-draft guard. GitHub Actions CI. README rewrite + docs/RUNBOOK.md. Hackathon-ready.
 
 ---
 
@@ -266,4 +242,4 @@ Items here are decisions made during planning sessions that affect future work. 
 
 ---
 
-*Last updated: 2026-05-06 — Phase 3 complete. A1–A6 marked done. B3/B4 partially done.*
+*Last updated: 2026-05-06 — Phases 1–7 complete. A1–A9, B1, B2, B3, B4 (partial), B6, C9, D5 marked done. Hackathon-ready.*

@@ -20,13 +20,17 @@ export default function Page() {
   const [running, setRunning] = useState(false);
   const { leads, loading } = useLeads(session?.user.id);
   const { events, pushOptimistic } = useScoutActivity(session?.user.id);
-  const { leadsQueued, pitchesSent } = useStats(session?.user.id);
+  const { leadsQueued, pitchesSent, hoursSaved } = useStats(session?.user.id);
 
   const liveStats: StatCard[] = [
     { label: "Leads queued", value: String(leadsQueued) },
     { label: "Pitches sent", value: String(pitchesSent) },
     { label: "Reply rate", value: "—" },
-    { label: "Hours saved", value: "—", accent: true },
+    {
+      label: "Hours saved",
+      value: hoursSaved > 0 ? `${hoursSaved}h` : "—",
+      accent: true,
+    },
   ];
   const hasAutoSelected = useRef(false);
 
@@ -117,6 +121,7 @@ export default function Page() {
           subtitle={subtitle}
           onRunScout={handleRunScout}
           running={running}
+          userId={session?.user.id}
         />
         <div className="oc-content">
           <StatCards stats={liveStats} />

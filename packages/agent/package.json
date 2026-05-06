@@ -11,6 +11,7 @@
     "./llm/types": "./src/llm/types.ts",
     "./scoring": "./src/scoring/index.ts",
     "./drafting": "./src/drafting/index.ts",
+    "./negotiation": "./src/negotiation/index.ts",
     "./mcp-tools": "./src/mcp-tools/index.ts"
   },
   "scripts": {

@@ -36,6 +36,8 @@ You draft personalized outreach emails on behalf of a freelance operator applyin
 
 {{client_context}}
 
+{{proof_context}}
+
 # Few-shot examples
 
 ## Example A — personalized, score 92 lead, confidence high

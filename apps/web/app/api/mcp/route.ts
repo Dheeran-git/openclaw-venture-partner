@@ -4,6 +4,7 @@ import {
   checkBindRateLimit,
   recordBindFailure,
 } from "../../../lib/mcp-auth";
+import { rateLimit } from "../../../lib/rateLimit";
 import { handlers, toolManifests } from "@openclaw/agent/mcp-tools";
 
 interface JsonRpcRequest {
@@ -81,6 +82,53 @@ export async function POST(req: Request) {
             {
               type: "text",
               text: JSON.stringify({ ok: false, error: "rate_limited", retry_after: bindRl.retryAfter }),
+            },
+          ],
+        });
+      }
+    }
+
+    // Per-tool rate limits keyed on platform user (Gateway → platform_user_id)
+    // matching the user-facing /api/scout and /api/pitches/draft limits.
+    const platformId = args.platform_user_id as string | undefined;
+    if (toolName === "runScout" && platformId) {
+      const tl = await rateLimit({
+        prefix: "mcp-runScout",
+        id: platformId,
+        limit: 10,
+        windowMs: 60 * 60 * 1000,
+      });
+      if (!tl.allowed) {
+        return rpcResult(id, {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                ok: false,
+                error: "rate_limited",
+                retry_after: tl.retryAfter,
+              }),
+            },
+          ],
+        });
+      }
+    } else if (toolName === "draftPitch" && (args.user_id as string | undefined)) {
+      const tl = await rateLimit({
+        prefix: "mcp-draftPitch",
+        id: args.user_id as string,
+        limit: 30,
+        windowMs: 24 * 60 * 60 * 1000,
+      });
+      if (!tl.allowed) {
+        return rpcResult(id, {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                ok: false,
+                error: "rate_limited",
+                retry_after: tl.retryAfter,
+              }),
             },
           ],
         });

@@ -1,14 +1,18 @@
 import type { ModelTier } from "./types";
 import { SCORE_LEAD_PROMPT } from "../prompts/score-lead";
 import { DRAFT_PITCH_PROMPT } from "../prompts/draft-pitch";
+import { CLASSIFY_REPLY_PROMPT } from "../prompts/classify-reply";
+import { DRAFT_REPLY_PROMPT } from "../prompts/draft-reply";
 
 // Prompts are inlined as TS string exports rather than read from .md files
 // at runtime: import.meta.url resolves to the build path inside Next.js's
 // bundler output, so fs.readFile would target a directory that doesn't
-// exist on Vercel. The matching .md siblings stay in source for review.
+// exist on Vercel.
 const PROMPTS: Record<string, string> = {
   "score-lead": SCORE_LEAD_PROMPT,
   "draft-pitch": DRAFT_PITCH_PROMPT,
+  "classify-reply": CLASSIFY_REPLY_PROMPT,
+  "draft-reply": DRAFT_REPLY_PROMPT,
 };
 
 export interface PromptFrontmatter {

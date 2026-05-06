@@ -1,15 +1,28 @@
 import { z } from "zod";
 import { inngest } from "@openclaw/worker";
 import { getSession } from "../../../../lib/supabaseServer";
+import { rateLimit, rateLimited } from "../../../../lib/rateLimit";
 
 const DraftBody = z.object({
   lead_id: z.string().uuid(),
 });
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = await rateLimit({
+    prefix: "pitch-draft",
+    id: session.user.id,
+    limit: 30,
+    windowMs: DAY_MS,
+  });
+  if (!rl.allowed) {
+    return rateLimited(rl.retryAfter, "draft_rate_limited");
   }
 
   let body: unknown;

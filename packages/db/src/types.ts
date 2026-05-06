@@ -150,12 +150,24 @@ export interface Database {
           source_lead_id: string | null;
           status: string | null;
           memory_md: string | null;
+          upsell_flagged_at: string | null;
+          upsell_reason: string | null;
+          last_reply_at: string | null;
           created_at: string;
         };
-        Insert: Omit<
-          Database["public"]["Tables"]["clients"]["Row"],
-          "id" | "created_at"
-        > & { id?: string; created_at?: string };
+        Insert: {
+          id?: string;
+          user_id: string;
+          company_name: string;
+          contact_email?: string | null;
+          source_lead_id?: string | null;
+          status?: string | null;
+          memory_md?: string | null;
+          upsell_flagged_at?: string | null;
+          upsell_reason?: string | null;
+          last_reply_at?: string | null;
+          created_at?: string;
+        };
         Update: Partial<Database["public"]["Tables"]["clients"]["Insert"]>;
       };
       approvals: {
@@ -245,6 +257,131 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["binding_codes"]["Insert"]>;
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          kind: string;
+          title: string;
+          body: string | null;
+          resource_type: string | null;
+          resource_id: string | null;
+          href: string | null;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          kind: string;
+          title: string;
+          body?: string | null;
+          resource_type?: string | null;
+          resource_id?: string | null;
+          href?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["notifications"]["Insert"]>;
+      };
+      email_replies: {
+        Row: {
+          id: string;
+          user_id: string;
+          pitch_id: string;
+          client_id: string | null;
+          from_email: string;
+          subject: string | null;
+          body_text: string;
+          body_html: string | null;
+          received_at: string;
+          classification: "positive" | "negative" | "question" | "unsubscribe" | null;
+          classification_confidence: "high" | "medium" | "low" | null;
+          classification_reasoning: string | null;
+          classification_suggested_action: string | null;
+          drafted_subject: string | null;
+          drafted_options: Json | null;
+          drafted_reasoning: string | null;
+          selected_option_index: number | null;
+          approved_body: string | null;
+          payload_hash: string | null;
+          status:
+            | "pending"
+            | "classified"
+            | "drafted"
+            | "approved"
+            | "sent"
+            | "rejected"
+            | "failed"
+            | "unsubscribed";
+          sent_at: string | null;
+          send_error: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          pitch_id: string;
+          client_id?: string | null;
+          from_email: string;
+          subject?: string | null;
+          body_text: string;
+          body_html?: string | null;
+          received_at?: string;
+          classification?: "positive" | "negative" | "question" | "unsubscribe" | null;
+          classification_confidence?: "high" | "medium" | "low" | null;
+          classification_reasoning?: string | null;
+          classification_suggested_action?: string | null;
+          drafted_subject?: string | null;
+          drafted_options?: Json | null;
+          drafted_reasoning?: string | null;
+          selected_option_index?: number | null;
+          approved_body?: string | null;
+          payload_hash?: string | null;
+          status?:
+            | "pending"
+            | "classified"
+            | "drafted"
+            | "approved"
+            | "sent"
+            | "rejected"
+            | "failed"
+            | "unsubscribed";
+          sent_at?: string | null;
+          send_error?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_replies"]["Insert"]>;
+      };
+      proof_artifacts: {
+        Row: {
+          id: string;
+          user_id: string;
+          pitch_id: string;
+          artifact_type: "lighthouse" | "sample_component" | "video" | "custom";
+          target_url: string;
+          summary: string | null;
+          metadata: Json;
+          status: "pending" | "running" | "complete" | "failed";
+          error: string | null;
+          generated_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          pitch_id: string;
+          artifact_type: "lighthouse" | "sample_component" | "video" | "custom";
+          target_url: string;
+          summary?: string | null;
+          metadata?: Json;
+          status?: "pending" | "running" | "complete" | "failed";
+          error?: string | null;
+          generated_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["proof_artifacts"]["Insert"]>;
       };
       chat_callback_tokens: {
         Row: {

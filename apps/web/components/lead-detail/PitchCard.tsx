@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Edit2, Check, X, Send } from "lucide-react";
 import { usePitch } from "../../hooks/usePitch";
 import type { PitchStatus } from "@openclaw/db/types";
+import { ProofCard } from "./ProofCard";
 
 interface PitchCardProps {
   leadId: string;
@@ -420,6 +421,8 @@ export function PitchCard({ leadId }: PitchCardProps) {
           )}
         </div>
       )}
+
+      <ProofCard pitchId={pitch.id} />
 
       {toast && <ToastBanner message={toast} />}
     </div>

@@ -1,16 +1,29 @@
 import { z } from "zod";
 import { inngest } from "@openclaw/worker";
 import { getSession } from "../../../lib/supabaseServer";
+import { rateLimit, rateLimited } from "../../../lib/rateLimit";
 
 const ScoutBody = z.object({
   query: z.string().trim().min(2).max(120),
   limit: z.number().int().min(1).max(50).optional(),
 });
 
+const HOUR_MS = 60 * 60 * 1000;
+
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = await rateLimit({
+    prefix: "scout",
+    id: session.user.id,
+    limit: 10,
+    windowMs: HOUR_MS,
+  });
+  if (!rl.allowed) {
+    return rateLimited(rl.retryAfter, "scout_rate_limited");
   }
 
   let body: unknown;

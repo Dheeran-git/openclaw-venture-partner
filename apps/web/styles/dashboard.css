@@ -45,6 +45,21 @@
 .oc-query:focus { border-color: var(--brand-coral); }
 .oc-query:disabled { opacity: 0.65; cursor: default; }
 
+/* Generic form inputs used in /settings pages */
+.oc-input { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--fg-primary); outline: none; transition: border-color 140ms; font-family: inherit; }
+.oc-input:hover { border-color: var(--border-emphasis); }
+.oc-input:focus { border-color: var(--brand-coral); }
+.oc-input::placeholder { color: var(--fg-dim); }
+
+.oc-textarea { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--fg-primary); outline: none; transition: border-color 140ms; font-family: var(--font-mono); line-height: 1.5; resize: vertical; }
+.oc-textarea:hover { border-color: var(--border-emphasis); }
+.oc-textarea:focus { border-color: var(--brand-coral); }
+.oc-textarea::placeholder { color: var(--fg-dim); }
+
+/* Accessibility — skip-to-content link, hidden until focused */
+.oc-skip-link { position: absolute; top: 0; left: 0; padding: 8px 12px; background: var(--brand-coral); color: #0B0F19; font-size: 13px; font-weight: 600; z-index: 999; transform: translateY(-100%); transition: transform 140ms; text-decoration: none; }
+.oc-skip-link:focus { transform: translateY(0); outline: 2px solid #0B0F19; outline-offset: 2px; }
+
 /* Buttons */
 .oc-btn { font-family: var(--font-sans); font-size: 13px; font-weight: 500; padding: 0 12px; height: 32px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 140ms; white-space: nowrap; flex-shrink: 0; }
 .oc-btn-primary { background: var(--brand-coral); color: #fff; }

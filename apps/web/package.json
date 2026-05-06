@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:isolation": "tsx --env-file=../../.env tests/e2e/auth-isolation.ts"
+    "test:isolation": "tsx --env-file=../../.env tests/e2e/auth-isolation.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@openclaw/agent": "workspace:*",

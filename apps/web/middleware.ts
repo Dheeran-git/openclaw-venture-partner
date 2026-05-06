@@ -1,7 +1,13 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/auth/", "/api/inngest", "/api/mcp", "/api/telegram/"];
+const PUBLIC_PATHS = [
+  "/auth/",
+  "/api/inngest",
+  "/api/mcp",
+  "/api/telegram/",
+  "/api/email/inbound",
+];
 
 function normalizeUrl(raw: string): string {
   return raw.replace(/\/+$/, "").replace(/\/(rest|auth|storage|realtime)\/v1$/i, "");

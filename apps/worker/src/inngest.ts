@@ -27,4 +27,16 @@ export type Events = {
   "pitch/approved": {
     data: { pitch_id: string; user_id: string };
   };
+  "proof/lighthouse-requested": {
+    data: { user_id: string; pitch_id: string; artifact_id: string; target_url: string };
+  };
+  "email/reply-received": {
+    data: { reply_id: string; user_id: string; pitch_id: string };
+  };
+  "reply/approved": {
+    data: { reply_id: string; user_id: string };
+  };
+  "client/upsell-scan": {
+    data: Record<string, never>;
+  };
 };

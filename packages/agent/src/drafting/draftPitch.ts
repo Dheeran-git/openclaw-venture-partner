@@ -32,6 +32,8 @@ export async function draftPitch(opts: {
   userId: string;
   /** Markdown from clients.memory_md. Pass undefined if no prior relationship. */
   clientMemoryMd?: string;
+  /** One-line summary of any completed proof artifact (e.g., Lighthouse audit). */
+  proofSummary?: string;
 }): Promise<DraftPitchResult> {
   const { meta, body } = await loadPrompt("draft-pitch");
   const prompt_version = `draft-pitch@${meta.version}`;
@@ -40,10 +42,15 @@ export async function draftPitch(opts: {
     ? `# Client context (prior interactions)\n\n${opts.clientMemoryMd}`
     : "";
 
+  const proofContext = opts.proofSummary
+    ? `# Proof of value (already prepared — body MUST reference it concretely)\n\n${opts.proofSummary}`
+    : "";
+
   const prompt = renderPrompt(body, {
     profile_json: opts.profile,
     lead_json: opts.lead,
     client_context: clientContext,
+    proof_context: proofContext,
   });
 
   const result = await llm.complete({

@@ -30,7 +30,7 @@ function buildPrimary(inboxCount: number, pitchesCount: number): NavItem[] {
     { id: "inbox", icon: Inbox, label: "Inbox", count: inboxCount > 0 ? String(inboxCount) : undefined, href: "/" },
     { id: "scout", icon: Search, label: "Scout", count: "running", live: true, future: true },
     { id: "pitches", icon: FileText, label: "Pitches", count: pitchesCount > 0 ? String(pitchesCount) : undefined, href: "/pitches" },
-    { id: "clients", icon: Users, label: "Clients", future: true },
+    { id: "clients", icon: Users, label: "Clients", href: "/clients" },
   ];
 }
 

@@ -48,7 +48,7 @@ export interface StatCard {
 }
 
 export interface ActivityEvent {
-  kind: "live" | "ok" | "warn" | "";
+  kind: "live" | "ok" | "warn" | "" | "divider";
   text: string;
   meta: string;
 }

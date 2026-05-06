@@ -17,12 +17,36 @@ export function ActivityRail({ events }: { events: ActivityEvent[] }) {
         </span>
       </div>
       <div className="oc-tl">
-        {events.map((e, i) => (
-          <div key={i} className={`oc-ev ${kindClass(e.kind)}`}>
-            <div className="oc-ev-text">{e.text}</div>
-            <div className="oc-ev-meta">{e.meta}</div>
-          </div>
-        ))}
+        {events.map((e, i) => {
+          if (e.kind === "divider") {
+            return (
+              <div
+                key={i}
+                className="oc-mono"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  margin: "12px 0",
+                  color: "var(--fg-dim)",
+                  fontSize: 10,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+                <span>{e.text}</span>
+                <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+              </div>
+            );
+          }
+          return (
+            <div key={i} className={`oc-ev ${kindClass(e.kind)}`}>
+              <div className="oc-ev-text">{e.text}</div>
+              <div className="oc-ev-meta">{e.meta}</div>
+            </div>
+          );
+        })}
       </div>
     </aside>
   );

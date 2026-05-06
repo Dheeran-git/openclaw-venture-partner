@@ -26,8 +26,11 @@ Read it at the start of every session. When this file and the build guide disagr
 - **Phase 1 (Foundations):** complete.
 - **Phase 2 (Scout pipeline):** complete.
 - **Phase 2.5 (Auth + RLS cutover):** complete.
-- **Phase 3 (HITL approval flow):** complete (2026-05-06). Migrations 0009 + 0010 applied. Pitch drafting, two-call streaming PitchCard, web approve/reject/edit routes, Resend send via sandbox, MCP server with shared-secret + rate-limit auth, all 6 skills + `openclaw.config.json`, `/settings/connect` binding flow, standalone Telegram webhook (Gateway free-tier OOM workaround), `notifyAgent` push with inline-keyboard approval, `/pitches` list view, real Pitches Sent stat card, sidebar Pitches link active. Discord channel + tests deferred to Phase 4 follow-up.
-- **Phase 4 (Layer 2 proof-of-value):** next. See build guide.
+- **Phase 3 (HITL approval flow):** complete (2026-05-06).
+- **Phase 4 (Layer 2 proof-of-value):** complete (2026-05-06). Migration 0012 (`proof_artifacts`). `runLighthouseAudit` worker via Google PageSpeed Insights API (no Chromium binary). `/api/pitches/[id]/generate-proof` route, ProofCard preview component, draft-pitch prompt accepts optional `proof_context` and worker auto-loads completed proofs.
+- **Phase 5 (Layer 3 negotiation):** complete (2026-05-06). Migrations 0013 + 0014. `classify-reply` + `draft-reply` prompts and Zod schemas. `processInboundReply` worker (classify + create-client + draft 3 options). `sendApprovedReply` worker (Resend + memory_md append). `/api/email/inbound` (Resend webhook) + `/api/email/simulate` (free-tier sim). `/clients` list + detail with MemoryRenderer + ReplyCard. Sidebar Clients un-dimmed. `detectUpsells` daily cron + manual trigger.
+- **Phase 6 (production hardening):** complete (2026-05-06). Demo-mode parachute (`/api/demo/seed`). Generalized rate limiter (Upstash + in-memory fallback) on `/api/scout` 10/hr, `/api/pitches/draft` 30/day, MCP per-tool. Sentry + PostHog SDK-free shims (env-driven). Search bar with Postgres ILIKE + `⌘K` shortcut. Migration 0015 + real notifications system (table + bell + dropdown + realtime). `/settings` index + profile editor + data export/import + danger zone. Hours-saved heuristic + activity rail dividers. Skip-to-content a11y link.
+- **Phase 7 (observability/test/deploy):** complete (2026-05-06). Vitest unit tests (payloadHash, draftPitch, classifyReply — 15 passing). Playwright E2E specs (pitch-approve happy path + payload_hash 409 stale-draft guard). GitHub Actions CI workflow (typecheck + lint + Vitest). README rewrite with architecture diagram + 90-second demo arc. `docs/RUNBOOK.md` with common-incident resolutions.
 
 ## Repo orientation
 
@@ -58,4 +61,4 @@ If the build guide doesn't cover something, surface to the owner before implemen
 
 ---
 
-*This file is intentionally thin. The room is `PRODUCTION_BUILD_GUIDE.md`. Last updated: Phase 3 complete (2026-05-06).*
+*This file is intentionally thin. The room is `PRODUCTION_BUILD_GUIDE.md`. Last updated: Phases 1–7 complete (2026-05-06). Hackathon-ready.*

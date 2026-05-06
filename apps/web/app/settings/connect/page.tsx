@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, RefreshCw } from "lucide-react";
+import { Copy, Check, RefreshCw, Zap } from "lucide-react";
 import { Sidebar } from "../../../components/Sidebar";
 import { useSession } from "../../../lib/auth";
 
@@ -14,6 +14,8 @@ export default function ConnectPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedError, setSeedError] = useState<string | null>(null);
 
   useEffect(() => {
     if (session === null) router.replace("/auth/login");
@@ -57,6 +59,27 @@ export default function ConnectPage() {
     await navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleSeedDemo() {
+    setSeedError(null);
+    setSeeding(true);
+    try {
+      const res = await fetch("/api/demo/seed", { method: "POST" });
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        redirect?: string;
+      };
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error ?? "Seed failed");
+      }
+      router.push((json.redirect ?? "/") as never);
+    } catch (err) {
+      setSeedError((err as Error).message);
+    } finally {
+      setSeeding(false);
+    }
   }
 
   const minutes = Math.floor(timeLeft / 60);
@@ -184,6 +207,47 @@ export default function ConnectPage() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+
+          {/* Demo seed (parachute for live demos) */}
+          <div
+            style={{
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 8,
+              padding: "16px 20px",
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--fg-secondary)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                marginBottom: 8,
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              Demo mode
+            </div>
+            <p style={{ fontSize: 13, color: "var(--fg-secondary)", lineHeight: 1.5, marginTop: 0, marginBottom: 12 }}>
+              Seed a high-quality lead, score, drafted pitch, and Lighthouse audit
+              for a guaranteed-working live demo. Replaces any prior seed.
+            </p>
+            <button
+              className="oc-btn oc-btn-secondary"
+              onClick={handleSeedDemo}
+              disabled={seeding}
+              style={{ width: "100%", justifyContent: "center" }}
+            >
+              <Zap size={13} strokeWidth={1.5} />
+              {seeding ? "Seeding..." : "Seed demo data"}
+            </button>
+            {seedError && (
+              <div style={{ color: "#EF4444", fontSize: 12, marginTop: 8 }}>{seedError}</div>
             )}
           </div>
 

@@ -64,11 +64,43 @@ export const draftPitch = inngest.createFunction(
       timezone: profile.timezone ?? null,
     };
 
+    const proofSummary = await step.run("load-proof-context", async () => {
+      const { data: pitches } = await supabase
+        .from("pitches")
+        .select("id")
+        .eq("lead_id", lead_id)
+        .eq("user_id", user_id);
+      const pitchIds = (pitches ?? []).map((p) => p.id);
+      if (pitchIds.length === 0) return null;
+
+      const { data: proofs } = await supabase
+        .from("proof_artifacts")
+        .select("summary, metadata")
+        .in("pitch_id", pitchIds)
+        .eq("status", "complete")
+        .eq("artifact_type", "lighthouse")
+        .order("generated_at", { ascending: false })
+        .limit(1);
+      const proof = proofs?.[0];
+      if (!proof?.summary) return null;
+
+      const meta = proof.metadata as
+        | { performance?: number; top_recommendations?: Array<{ title: string }> }
+        | null;
+      const topTitles = (meta?.top_recommendations ?? [])
+        .slice(0, 2)
+        .map((r) => r.title)
+        .filter(Boolean);
+      const tail = topTitles.length > 0 ? ` Top issues to mention: ${topTitles.join("; ")}.` : "";
+      return `${proof.summary}${tail}`;
+    });
+
     const output = await step.run("call-llm", () =>
       runDraftPitch({
         lead: draftingLead,
         profile: draftingProfile,
         userId: user_id,
+        ...(proofSummary !== null ? { proofSummary } : {}),
       })
     );
 
@@ -113,6 +145,18 @@ export const draftPitch = inngest.createFunction(
           subject: output.subject,
           body: output.body,
         },
+      });
+    });
+
+    await step.run("insert-notification", async () => {
+      await supabase.from("notifications").insert({
+        user_id,
+        kind: "pitch_drafted",
+        title: "Pitch ready for review",
+        body: output.subject,
+        resource_type: "pitches",
+        resource_id: inserted.pitch_id,
+        href: `/?lead=${lead_id}`,
       });
     });
 
