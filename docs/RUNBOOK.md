@@ -98,15 +98,95 @@ If anything breaks live, fire `/api/demo/seed` (button at `/settings/connect`). 
 
 ---
 
+## Discord interactions endpoint isn't accepting
+
+**Symptom:** Discord developer portal won't accept the "Interactions Endpoint URL" save (gives "validation error" or hangs).
+
+Discord pings the URL on save. Our verifier requires `DISCORD_PUBLIC_KEY` to be set on Vercel and to match what Discord expects.
+
+```bash
+# Confirm the route is reachable
+curl -i https://<vercel-url>/api/discord/interactions
+# Expect 401 (no signature) — that means the route exists.
+```
+
+If `DISCORD_PUBLIC_KEY` is missing or wrong: copy from discord.com/developers/applications → your app → General Information → "PUBLIC KEY", paste into Vercel env, redeploy, retry the developer-portal save.
+
+If the redeploy hasn't propagated, Discord retries up to 30s. If it still fails, the endpoint isn't returning the PONG correctly — check `apps/web/app/api/discord/interactions/route.ts` returns `{ type: 1 }` for `body.type === 1`.
+
+## Discord slash commands aren't visible
+
+After running `pnpm --filter web exec tsx --env-file=../../.env scripts/registerDiscordCommands.ts` once, Discord's UI may take up to 1 hour to refresh global commands. For testing, register them as guild-scoped (per-server) commands by changing the URL to `/applications/{APP_ID}/guilds/{GUILD_ID}/commands` — those propagate within seconds.
+
+## Groq quota exhausted
+
+**Symptom:** `groq 429: Rate limit exceeded` in `llm_calls`.
+
+Groq's free tier is generous (~30 rpm + 14k tokens/min) but bursty scout pipelines can hit it. The router automatically fails over to OpenRouter or Anthropic if either is configured. To verify the chain is actually falling through, check `provider_health` in Supabase:
+
+```sql
+select provider, ok, error_message, latency_ms
+from provider_health
+order by checked_at desc
+limit 20;
+```
+
+If only Groq rows appear and they're all `ok=false`, the chain is single-provider — set `OPENROUTER_API_KEY` on Vercel.
+
+## Daily AI quota reached / BudgetExceededError
+
+**Symptom:** Notification "Daily AI quota reached. Resets at midnight UTC."
+
+Per-user `USER_DAILY_BUDGET_USD` (default $5) is enforced via the `user_daily_spend` materialized view. Resets at UTC midnight when the `refresh-daily-spend` cron runs. To override for the current day:
+
+```sql
+-- Find the user's UTC-day row
+select * from user_daily_spend where user_id = '<uuid>' and day = current_date;
+
+-- Either bump USER_DAILY_BUDGET_USD on Vercel (affects all users), or
+-- temporarily clear today's row to give them headroom (re-runs on next refresh):
+delete from llm_calls where user_id = '<uuid>' and created_at >= current_date;
+refresh materialized view concurrently user_daily_spend;
+```
+
+## Materialized view refresh failing
+
+**Symptom:** Inngest `refresh-daily-spend` cron logs `rpc failed: function public.refresh_user_daily_spend() does not exist`.
+
+Migration 0016 hasn't been applied. Apply it via Supabase SQL Editor (paste the contents of `packages/db/migrations/0016_llm_production.sql`). The function and matview are bundled in that migration.
+
+## scrape_failures shows raw HTML I need to debug
+
+```sql
+select source, url, parser_strategy, error_message,
+       length(raw_html) as html_size,
+       created_at
+from scrape_failures
+where source = 'linkedin'
+order by created_at desc
+limit 5;
+
+-- Inspect specific HTML for selector drift:
+select raw_html from scrape_failures where id = '<uuid>';
+```
+
+When LinkedIn or Indeed redesigns, fix the parser in `packages/scraping/src/zyte/parsers/<source>.ts`, ship a commit, and confirm the next scout run produces zero new `scrape_failures` rows.
+
+---
+
 ## Pre-submission ops checks (T-24h)
 
 - [ ] `getWebhookInfo` returns no `last_error_message`
-- [ ] Inngest sync is green; all 9 functions visible
+- [ ] Inngest sync is green; all 10 functions visible (incl. `refresh-daily-spend`)
 - [ ] At least one LLM provider key is valid (`pnpm --filter @openclaw/agent smoke`)
 - [ ] Resend has quota remaining
 - [ ] Demo seed runs end-to-end with `/api/demo/seed`
+- [ ] Migrations 0016 + 0017 applied to Supabase
+- [ ] `provider_health` writes appear after a fresh scout run
+- [ ] `/api/health` returns `{ok:true}` in <2s; Better Uptime monitor green
+- [ ] Discord bot bound to your account (if Discord enabled); slash commands visible in DM
 - [ ] Backup demo video is recorded and linked in README
 
 ---
 
-*Last updated: 2026-05-06. Add new entries above this line.*
+*Last updated: 2026-05-06 — Phase 8 closeout. Add new entries above this line.*

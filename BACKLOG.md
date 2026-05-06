@@ -109,11 +109,9 @@ Things explicitly pushed past the hackathon submission. Tracking them so they do
 ~~**Owner / Phase:** Claude Code, Phase 2.5 (timing TBD per timeline).~~
 **Status:** done — 2026-05-04. Auth scaffolding, onboarding, middleware, RLS migrations (0006, 0007), isolation test script, and full DEMO_USER_ID removal all shipped. Apply 0006+0007 to the Supabase dashboard, then run `pnpm --filter web test:isolation` to confirm isolation passes.
 
-### C2. Zyte adapter activation
-**What:** Adapter ships in Phase 2 but stub remains the default scraper. Activating means setting `ZYTE_API_KEY` + `SCRAPER=zyte` in production. Production also requires the parser to be hardened against Upwork's HTML drift (Phase 2's two-strategy fallback was conservative; production needs real-world calibration).
-**Why deferred:** Stub is fine for demo (deterministic). Real scraping costs real Zyte credits.
-**Owner / Phase:** Claude Code, Phase 6 / Phase 7.
-**Status:** open
+### ~~C2. Zyte adapter activation + multi-source~~
+~~**What:** Adapter ships in Phase 2 but stub remains the default scraper.~~
+**Status:** Phase 8 (2026-05-06) — Zyte refactored into a multi-source dispatcher with per-source URL builders + parsers (Upwork/LinkedIn/Indeed/Reddit/Contra/Freelancer), per-source token-bucket rate limits, exponential-backoff retry (1s/4s/16s, max 3), and `scrape_failures` raw-HTML capture for offline parser debugging. Firecrawl secondary adapter ships with cascading fallback. Activation still requires `ZYTE_API_KEY` + `SCRAPER=zyte` (free-tier via GitHub Student perk).
 
 ### C3. Anthropic API as primary LLM provider (decision deferred)
 **What:** Currently the chain is Copilot → Gemini → Groq → OpenRouter → Anthropic-dormant. Production might flip to Anthropic-first with proper billing. The adapter is already built; flipping the order in the router is a one-line change.
@@ -225,6 +223,7 @@ Items here are decisions made during planning sessions that affect future work. 
 - **2026-05-06 — Telegram via standalone webhook, not OpenClaw Gateway.** Railway free tier (512MB) OOMs when the Gateway boots its Telegram bot library, so Telegram is owned by a thin Vercel route at `/api/telegram/webhook` that calls `handlers.bindTelegram` / `approvePitch` / `rejectPitch` directly. The Gateway stays in the architecture for skills + MCP + Discord/Slack/WhatsApp; this is a pragmatic split, not an abandonment of OpenClaw.
 - **2026-05-06 — Phase 3 complete.** End-to-end HITL approval shipped: pitch drafting, two-call streaming PitchCard, web approve/reject/edit routes, Resend send via sandbox, MCP server, all skills + Gateway config, `/settings/connect` binding, Telegram webhook + inline keyboard, `notifyAgent` push, `/pitches` list, real Pitches Sent stat. Discord channel + automated tests deferred to follow-up. Phase 4 (Layer 2 proof-of-value) is next.
 - **2026-05-06 — Phases 4–7 complete.** Lighthouse proof-of-value via Google PageSpeed Insights API (no Chromium binary). Reply ingestion with classify+draft 3 options, `/clients` UI with MemoryRenderer + ReplyCard, daily `detectUpsells` cron. Demo-mode parachute, generalized Upstash+memory rate limiter, SDK-free Sentry+PostHog shims, ILIKE-based search with ⌘K, real notifications system, /settings index + profile editor + data export/import + danger zone, Hours-saved heuristic, activity rail dividers, skip-to-content a11y. Vitest suite (15 passing) including payload_hash determinism + classifyReply schema. Playwright specs for pitch-approve happy path + 409 stale-draft guard. GitHub Actions CI. README rewrite + docs/RUNBOOK.md. Hackathon-ready.
+- **2026-05-06 — Phase 8 closeout.** Re-read `PRODUCTION_BUILD_GUIDE.md` end-to-end against shipped code; closed every gap achievable on $0 budget. **LLM client (§4):** Groq is the 5th provider (router order Copilot→Gemini→Groq→OpenRouter→Anthropic-dormant); `pricing.ts` populates `llm_calls.cost_usd`; `LLMClient.stream()` on SSE-capable adapters; idempotency keys via `(user_id, idempotency_key)` cache lookup; `BudgetExceededError` against `user_daily_spend` matview; `provider_health` rows from every router probe; nightly `refresh-daily-spend` Inngest cron. **Scraping (§5):** `SourceType` enum, `Scraper.health()`, per-source URL builders + per-source parsers (Upwork/LinkedIn/Indeed/Reddit/Contra/Freelancer), per-source token-bucket rate limits, exponential-backoff retry, `scrape_failures` raw-HTML capture, Firecrawl secondary adapter with cascading fallback. **Discord (§7.2):** `/api/discord/interactions` Ed25519-verified webhook (built-in Node crypto, no tweetnacl dep), slash-command registration script, `notifyAgent` fan-out to Discord DM with coral-color embed + Approve/Reject buttons sharing the same `chat_callback_tokens` as Telegram. **Skills:** `reply_to_email`, `client_memory`, `lighthouse_audit` added — 9 total. **Config:** `openclaw.config.json` lists all 5 providers + 4 channels (Slack/WhatsApp scaffolded). **Migrations 0016 + 0017** for matview/provider_health/idempotency_key + scrape_failures. **`/api/health`** route. **`.env.example`** matches build-guide §17 line-for-line.
 
 ---
 
@@ -242,4 +241,4 @@ Items here are decisions made during planning sessions that affect future work. 
 
 ---
 
-*Last updated: 2026-05-06 — Phases 1–7 complete. A1–A9, B1, B2, B3, B4 (partial), B6, C9, D5 marked done. Hackathon-ready.*
+*Last updated: 2026-05-06 — Phases 1–8 complete. A1–A9, B1, B2, B3, B4 (partial), B6, C2, C9, D5 marked done. Production-build-guide gap-zero. Hackathon-submission-ready.*
