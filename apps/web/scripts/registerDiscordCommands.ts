@@ -23,6 +23,20 @@ if (!APP_ID || !BOT_TOKEN) {
 
 const COMMANDS = [
   {
+    name: "bind",
+    description: "Link this Discord account to your OpenClaw dashboard with a 6-digit code",
+    options: [
+      {
+        name: "code",
+        description: "The 6-digit code shown at /settings/connect",
+        type: 3, // STRING
+        required: true,
+      },
+    ],
+    integration_types: [0, 1],
+    contexts: [0, 1, 2],
+  },
+  {
     name: "scout",
     description: "Find new freelance leads matching your profile",
     options: [

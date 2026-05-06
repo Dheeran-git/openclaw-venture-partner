@@ -79,6 +79,22 @@ async function handleSlashCommand(
   const dUserId = userId(i);
   if (!dUserId) return ephemeralReply("Could not identify user.");
 
+  // /bind is the only command available before the user is linked.
+  if (cmd === "bind") {
+    const code = (i.data?.options?.find((o) => o.name === "code")?.value ??
+      "") as string;
+    if (!code) return ephemeralReply("Usage: /bind code:<6-digit-code>");
+    const result = (await handlers.bindDiscord!({
+      code,
+      discord_user_id: dUserId,
+    })) as { ok: boolean; error?: string };
+    return ephemeralReply(
+      result.ok
+        ? "✅ Discord linked! You can now use /scout, /pitches, /clients, /help."
+        : `Linking failed: ${result.error ?? "unknown"}`
+    );
+  }
+
   // Resolve the operator's profile from discord_user_id.
   const supabase = createServiceRoleClient();
   const { data: profile } = await supabase
@@ -89,7 +105,7 @@ async function handleSlashCommand(
 
   if (!profile) {
     return ephemeralReply(
-      "Your Discord isn't linked yet. Open the dashboard at /settings/connect, generate a 6-digit code, then send it to me with `/bind <code>`."
+      "Your Discord isn't linked yet. Open the dashboard at /settings/connect, generate a 6-digit code, then run `/bind code:<the-code>` here."
     );
   }
 
@@ -129,6 +145,7 @@ async function handleSlashCommand(
   if (cmd === "help") {
     return ephemeralReply(
       "**OpenClaw Venture Partner**\n" +
+        "/bind code:<6-digit> — link your Discord (run once)\n" +
         "/scout query:<text> — find new leads\n" +
         "/pitches — show pending pitch approvals\n" +
         "/clients — open the client list in the dashboard\n" +
