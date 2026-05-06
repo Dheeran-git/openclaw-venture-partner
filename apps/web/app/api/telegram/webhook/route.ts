@@ -90,7 +90,7 @@ export async function POST(req: Request) {
       return new Response("OK");
     }
 
-    const result = await handlers.bindTelegram({
+    const result = await handlers.bindTelegram!({
       code: text,
       telegram_user_id: telegramUserIdStr,
     });
