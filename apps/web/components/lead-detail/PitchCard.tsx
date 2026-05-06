@@ -44,7 +44,7 @@ export function PitchCard({ leadId }: PitchCardProps) {
       setIsDrafting(false);
       setEditBody(pitch.draft);
     }
-  }, [pitch?.id, isDrafting]);
+  }, [pitch?.id, pitch?.draft, isDrafting]);
 
   function showToast(msg: string) {
     setToast(msg);
