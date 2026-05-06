@@ -2,18 +2,38 @@
   "llm": {
     "providers": [
       {
-        "id": "openrouter",
-        "apiKeyEnv": "OPENROUTER_API_KEY",
-        "models": ["openrouter/auto"]
+        "id": "copilot",
+        "apiKeyEnv": "COPILOT_TOKEN",
+        "models": ["gpt-4o-mini", "gpt-4o"],
+        "comment": "Primary — flat-fee Pro account; zero per-call cost"
       },
       {
         "id": "gemini",
         "apiKeyEnv": "GEMINI_API_KEY",
-        "models": ["gemini-2.0-flash"]
+        "models": ["gemini-2.5-flash", "gemini-2.5-pro"],
+        "comment": "Fast + capable backup; generous free tier"
+      },
+      {
+        "id": "groq",
+        "apiKeyEnv": "GROQ_API_KEY",
+        "models": ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"],
+        "comment": "Fast inference; free tier covers low-volume hackathon use"
+      },
+      {
+        "id": "openrouter",
+        "apiKeyEnv": "OPENROUTER_API_KEY",
+        "models": ["openrouter/auto", "openai/gpt-4o-mini"],
+        "comment": "Meta-router fallback; small free credit"
+      },
+      {
+        "id": "anthropic",
+        "apiKeyEnv": "ANTHROPIC_API_KEY",
+        "models": ["claude-haiku-4-5-20251001", "claude-sonnet-4-6"],
+        "comment": "Dormant — only activates if ANTHROPIC_API_KEY is set"
       }
     ],
-    "defaultProvider": "openrouter",
-    "defaultModel": "openrouter/auto"
+    "defaultProvider": "copilot",
+    "defaultModel": "gpt-4o"
   },
   "mcp": {
     "servers": [
@@ -40,11 +60,30 @@
   "channels": {
     "telegram": {
       "enabled": false,
-      "tokenEnv": "TELEGRAM_BOT_TOKEN"
+      "tokenEnv": "TELEGRAM_BOT_TOKEN",
+      "comment": "Wired via standalone /api/telegram/webhook (Railway free-tier OOMs the bot library inside the Gateway). Keep disabled here."
     },
     "discord": {
       "enabled": false,
-      "tokenEnv": "DISCORD_BOT_TOKEN"
+      "tokenEnv": "DISCORD_BOT_TOKEN",
+      "publicKeyEnv": "DISCORD_PUBLIC_KEY",
+      "appIdEnv": "DISCORD_APP_ID",
+      "comment": "Wired via standalone /api/discord/interactions webhook. Flip enabled=true on Gateway if you ever want the Gateway to handle Discord directly."
+    },
+    "slack": {
+      "enabled": false,
+      "tokenEnv": "SLACK_BOT_TOKEN",
+      "signingSecretEnv": "SLACK_SIGNING_SECRET",
+      "appIdEnv": "SLACK_APP_ID",
+      "comment": "Scaffold-only. Activation: create a Slack app at api.slack.com/apps, add scopes chat:write+commands+im:*, paste credentials into env, flip enabled=true. ~30 minutes total."
+    },
+    "whatsapp": {
+      "enabled": false,
+      "phoneIdEnv": "WHATSAPP_PHONE_ID",
+      "businessAccountIdEnv": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+      "tokenEnv": "WHATSAPP_TOKEN",
+      "verifyTokenEnv": "WHATSAPP_VERIFY_TOKEN",
+      "comment": "Scaffold-only. Activation requires Meta Business Verification (3-10 days) and a 24-hour-window template policy. Flip enabled=true after verification clears."
     }
   },
   "gateway": {
