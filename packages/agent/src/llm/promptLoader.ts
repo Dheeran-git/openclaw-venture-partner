@@ -1,14 +1,15 @@
-import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import type { ModelTier } from "./types";
+import { SCORE_LEAD_PROMPT } from "../prompts/score-lead";
+import { DRAFT_PITCH_PROMPT } from "../prompts/draft-pitch";
 
-const PROMPTS_DIR = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "prompts"
-);
+// Prompts are inlined as TS string exports rather than read from .md files
+// at runtime: import.meta.url resolves to the build path inside Next.js's
+// bundler output, so fs.readFile would target a directory that doesn't
+// exist on Vercel. The matching .md siblings stay in source for review.
+const PROMPTS: Record<string, string> = {
+  "score-lead": SCORE_LEAD_PROMPT,
+  "draft-pitch": DRAFT_PITCH_PROMPT,
+};
 
 export interface PromptFrontmatter {
   version: string;
@@ -25,8 +26,10 @@ const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
 const TIERS: ReadonlySet<ModelTier> = new Set(["fast", "balanced", "capable"]);
 
 export async function loadPrompt(name: string): Promise<LoadedPrompt> {
-  const path = join(PROMPTS_DIR, `${name}.md`);
-  const raw = await readFile(path, "utf8");
+  const raw = PROMPTS[name];
+  if (!raw) {
+    throw new Error(`Prompt ${name} not found in PROMPTS registry.`);
+  }
   return parsePrompt(name, raw);
 }
 
