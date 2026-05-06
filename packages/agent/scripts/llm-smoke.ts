@@ -155,7 +155,9 @@ async function main() {
 
   if (passed.length === 0) {
     console.error(
-      "no providers passed. Set GEMINI_API_KEY or OPENROUTER_API_KEY in .env to enable Phase 1 acceptance."
+      "no providers passed. Set at least one of " +
+        "COPILOT_TOKEN, GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, " +
+        "ANTHROPIC_API_KEY in .env to enable acceptance."
     );
     process.exit(1);
   }

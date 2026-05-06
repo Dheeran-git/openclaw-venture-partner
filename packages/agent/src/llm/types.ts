@@ -13,8 +13,9 @@ export type ModelTier = "fast" | "balanced" | "capable";
 
 export const PROVIDER_NAMES = [
   "copilot",
-  "openrouter",
   "gemini",
+  "groq",
+  "openrouter",
   "anthropic",
 ] as const;
 export type ProviderName = (typeof PROVIDER_NAMES)[number];
@@ -40,6 +41,11 @@ export const MODEL_MAP: Record<ProviderName, Record<ModelTier, string>> = {
     balanced: "gemini-2.5-flash",
     capable: "gemini-2.5-pro",
   },
+  groq: {
+    fast: "llama-3.1-8b-instant",
+    balanced: "llama-3.3-70b-versatile",
+    capable: "llama-3.3-70b-versatile",
+  },
   anthropic: {
     fast: "claude-haiku-4-5-20251001",
     balanced: "claude-sonnet-4-6",
@@ -58,6 +64,13 @@ export interface LLMRequest<T = string> {
   provider?: ProviderName;
   temperature?: number;
   max_tokens?: number;
+  /**
+   * When set, the call is idempotency-checked: if a prior llm_calls row with
+   * (user_id, idempotency_key) exists and has a successful response, return
+   * the cached response instead of hitting the provider. Use to make Inngest
+   * step retries free.
+   */
+  idempotencyKey?: string;
 }
 
 export interface LLMRawResponse {
@@ -78,6 +91,11 @@ export interface ProviderRequest {
   max_tokens?: number;
 }
 
+export interface StreamChunk {
+  chunk: string;
+  done: boolean;
+}
+
 export interface ProviderAdapter {
   readonly name: ProviderName;
   /** Synchronous credential presence check. Cheap; called frequently. */
@@ -85,10 +103,27 @@ export interface ProviderAdapter {
   /** Optional remote ping. Cached for 60s by the router. */
   healthCheck?(): Promise<boolean>;
   complete(req: ProviderRequest): Promise<LLMRawResponse>;
+  /** Optional streaming. Providers without SSE leave this undefined. */
+  stream?(req: ProviderRequest): AsyncIterable<StreamChunk>;
+}
+
+export interface StreamOpts {
+  user_id: string;
+  purpose: LLMPurpose;
+  prompt: string;
+  prompt_version: string;
+  model?: ModelTier;
+  /** Test-only override: force a specific provider. */
+  provider?: ProviderName;
+  temperature?: number;
+  max_tokens?: number;
+  /** When set, a llm_calls row with this key short-circuits the call. */
+  idempotencyKey?: string;
 }
 
 export interface LLMClient {
   complete<T = string>(opts: LLMRequest<T>): Promise<T>;
+  stream(opts: StreamOpts): AsyncIterable<StreamChunk>;
 }
 
 export class LLMError extends Error {

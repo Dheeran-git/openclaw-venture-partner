@@ -5,6 +5,7 @@ import {
   type ProviderAdapter,
   type ProviderRequest,
   type LLMRawResponse,
+  type StreamChunk,
 } from "../types";
 
 export const anthropicProvider: ProviderAdapter = {
@@ -53,5 +54,31 @@ export const anthropicProvider: ProviderAdapter = {
         err
       );
     }
+  },
+
+  async *stream(req: ProviderRequest): AsyncIterable<StreamChunk> {
+    const key = process.env.ANTHROPIC_API_KEY;
+    if (!key) throw new LLMError("ANTHROPIC_API_KEY missing", "anthropic");
+
+    const modelId = MODEL_MAP.anthropic[req.tier];
+    const client = new Anthropic({ apiKey: key });
+
+    const sdkStream = await client.messages.stream({
+      model: modelId,
+      max_tokens: req.max_tokens ?? 4096,
+      temperature: req.temperature ?? 0.2,
+      messages: [{ role: "user", content: req.prompt }],
+    });
+
+    for await (const event of sdkStream) {
+      if (
+        event.type === "content_block_delta" &&
+        event.delta.type === "text_delta"
+      ) {
+        yield { chunk: event.delta.text, done: false };
+      }
+    }
+
+    yield { chunk: "", done: true };
   },
 };

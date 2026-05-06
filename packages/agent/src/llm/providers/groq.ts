@@ -8,20 +8,39 @@ import {
 } from "../types";
 import { sseStream } from "../sseStream";
 
-const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+const HEALTH_PROBE_TIMEOUT_MS = 4_000;
 
-export const openrouterProvider: ProviderAdapter = {
-  name: "openrouter",
+export const groqProvider: ProviderAdapter = {
+  name: "groq",
 
   isConfigured() {
-    return !!process.env.OPENROUTER_API_KEY;
+    return !!process.env.GROQ_API_KEY;
+  },
+
+  async healthCheck() {
+    const key = process.env.GROQ_API_KEY;
+    if (!key) return false;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), HEALTH_PROBE_TIMEOUT_MS);
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/models", {
+        headers: { Authorization: `Bearer ${key}` },
+        signal: ctrl.signal,
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(t);
+    }
   },
 
   async complete(req: ProviderRequest): Promise<LLMRawResponse> {
-    const key = process.env.OPENROUTER_API_KEY;
-    if (!key) throw new LLMError("OPENROUTER_API_KEY missing", "openrouter");
+    const key = process.env.GROQ_API_KEY;
+    if (!key) throw new LLMError("GROQ_API_KEY missing", "groq");
 
-    const model = MODEL_MAP.openrouter[req.tier];
+    const model = MODEL_MAP.groq[req.tier];
     const body: Record<string, unknown> = {
       model,
       messages: [{ role: "user", content: req.prompt }],
@@ -35,8 +54,6 @@ export const openrouterProvider: ProviderAdapter = {
       headers: {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://openclaw.local",
-        "X-Title": "OpenClaw Venture Partner",
       },
       body: JSON.stringify(body),
     });
@@ -44,8 +61,8 @@ export const openrouterProvider: ProviderAdapter = {
     if (!res.ok) {
       const text = await res.text();
       throw new LLMError(
-        `openrouter ${res.status}: ${text.slice(0, 400)}`,
-        "openrouter"
+        `groq ${res.status}: ${text.slice(0, 400)}`,
+        "groq"
       );
     }
 
@@ -55,7 +72,7 @@ export const openrouterProvider: ProviderAdapter = {
       model?: string;
     };
     const text = data.choices?.[0]?.message?.content ?? "";
-    if (!text) throw new LLMError("openrouter empty response", "openrouter");
+    if (!text) throw new LLMError("groq empty response", "groq");
 
     return {
       text,
@@ -66,10 +83,10 @@ export const openrouterProvider: ProviderAdapter = {
   },
 
   async *stream(req: ProviderRequest): AsyncIterable<StreamChunk> {
-    const key = process.env.OPENROUTER_API_KEY;
-    if (!key) throw new LLMError("OPENROUTER_API_KEY missing", "openrouter");
+    const key = process.env.GROQ_API_KEY;
+    if (!key) throw new LLMError("GROQ_API_KEY missing", "groq");
 
-    const model = MODEL_MAP.openrouter[req.tier];
+    const model = MODEL_MAP.groq[req.tier];
     const body: Record<string, unknown> = {
       model,
       messages: [{ role: "user", content: req.prompt }],
@@ -83,8 +100,6 @@ export const openrouterProvider: ProviderAdapter = {
       headers: {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://openclaw.local",
-        "X-Title": "OpenClaw Venture Partner",
       },
       body: JSON.stringify(body),
     });
@@ -92,11 +107,11 @@ export const openrouterProvider: ProviderAdapter = {
     if (!res.ok || !res.body) {
       const text = await res.text().catch(() => "");
       throw new LLMError(
-        `openrouter stream ${res.status}: ${text.slice(0, 400)}`,
-        "openrouter"
+        `groq stream ${res.status}: ${text.slice(0, 400)}`,
+        "groq"
       );
     }
 
-    yield* sseStream(res.body, "openrouter");
+    yield* sseStream(res.body, "groq");
   },
 };

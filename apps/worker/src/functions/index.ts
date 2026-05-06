@@ -6,6 +6,7 @@ import { runLighthouseAudit } from "./runLighthouseAudit";
 import { processInboundReply } from "./processInboundReply";
 import { sendApprovedReply } from "./sendApprovedReply";
 import { detectUpsells, detectUpsellsManual } from "./detectUpsells";
+import { refreshDailySpend } from "./refreshDailySpend";
 
 export {
   healthcheck,
@@ -17,6 +18,7 @@ export {
   sendApprovedReply,
   detectUpsells,
   detectUpsellsManual,
+  refreshDailySpend,
 };
 export const functions = [
   healthcheck,
@@ -28,4 +30,5 @@ export const functions = [
   sendApprovedReply,
   detectUpsells,
   detectUpsellsManual,
+  refreshDailySpend,
 ];
