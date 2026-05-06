@@ -44,6 +44,7 @@ export function PitchCard({ leadId }: PitchCardProps) {
       setIsDrafting(false);
       setEditBody(pitch.draft);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pitch?.id, pitch?.draft, isDrafting]);
 
   function showToast(msg: string) {
