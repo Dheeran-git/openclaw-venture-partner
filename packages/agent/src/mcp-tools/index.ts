@@ -70,6 +70,73 @@ async function sendTelegramMessage(
 }
 
 // ---------------------------------------------------------------------------
+// Discord Bot API helpers
+// ---------------------------------------------------------------------------
+const DISCORD_API = "https://discord.com/api/v10";
+const DISCORD_BRAND_COLOR = 0xff4d4d; // Coral, per build guide §7.2
+
+async function discordOpenDm(userId: string): Promise<string | null> {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  if (!token) return null;
+  const res = await fetch(`${DISCORD_API}/users/@me/channels`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ recipient_id: userId }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { id?: string };
+  return data.id ?? null;
+}
+
+interface DiscordEmbed {
+  title?: string;
+  description?: string;
+  color?: number;
+  fields?: { name: string; value: string; inline?: boolean }[];
+}
+
+interface DiscordButton {
+  type: 2; // BUTTON
+  style: 1 | 2 | 3 | 4; // 3=Success, 4=Danger, 2=Secondary
+  label: string;
+  custom_id: string;
+}
+
+interface DiscordActionRow {
+  type: 1; // ACTION_ROW
+  components: DiscordButton[];
+}
+
+async function sendDiscordDmMessage(
+  discordUserId: string,
+  embed: DiscordEmbed,
+  components?: DiscordActionRow[]
+): Promise<{ ok: boolean; message_id?: string }> {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  if (!token) return { ok: false };
+  const channelId = await discordOpenDm(discordUserId);
+  if (!channelId) return { ok: false };
+
+  const body: Record<string, unknown> = { embeds: [embed] };
+  if (components && components.length > 0) body.components = components;
+
+  const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return { ok: false };
+  const data = (await res.json().catch(() => ({}))) as { id?: string };
+  return { ok: true, message_id: data.id };
+}
+
+// ---------------------------------------------------------------------------
 // Lead-related tools
 // ---------------------------------------------------------------------------
 
@@ -529,7 +596,75 @@ async function notifyAgent(args: Args): Promise<ToolResult> {
     platformsNotified.push("telegram");
   }
 
-  // Discord notifications wired in Step 6d once the bot is configured.
+  if (
+    profile.discord_user_id &&
+    process.env.ENABLE_DISCORD === "true" &&
+    process.env.DISCORD_BOT_TOKEN
+  ) {
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const approveToken = randomUUID().replace(/-/g, "");
+    const rejectToken = randomUUID().replace(/-/g, "");
+
+    const { error: tokenErr } = await supabase
+      .from("chat_callback_tokens")
+      .insert([
+        {
+          token: approveToken,
+          user_id,
+          pitch_id,
+          payload_hash,
+          action: "approve",
+          expires_at: expiresAt,
+        },
+        {
+          token: rejectToken,
+          user_id,
+          pitch_id,
+          payload_hash,
+          action: "reject",
+          expires_at: expiresAt,
+        },
+      ]);
+    if (!tokenErr) {
+      const bodyExcerpt =
+        body.length > 1000 ? body.slice(0, 1000) + "..." : body;
+      const scoreSuffix =
+        typeof score === "number" ? ` · Score: ${score}` : "";
+      const embed: DiscordEmbed = {
+        title: "📨 New pitch ready for review" + scoreSuffix,
+        color: DISCORD_BRAND_COLOR,
+        fields: [
+          {
+            name: subject || "Pitch",
+            value: bodyExcerpt || "(no body)",
+          },
+        ],
+      };
+      const row: DiscordActionRow = {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            style: 3, // Success / green
+            label: "✅ Approve",
+            custom_id: `act:${approveToken}`,
+          },
+          {
+            type: 2,
+            style: 4, // Danger / red
+            label: "❌ Reject",
+            custom_id: `act:${rejectToken}`,
+          },
+        ],
+      };
+      const result = await sendDiscordDmMessage(
+        profile.discord_user_id,
+        embed,
+        [row]
+      );
+      if (result.ok) platformsNotified.push("discord");
+    }
+  }
 
   return { ok: true, platforms: platformsNotified };
 }
