@@ -464,11 +464,13 @@ async function bindTelegram(args: Args): Promise<ToolResult> {
   const supabase = createServiceRoleClient();
   const now = new Date().toISOString();
 
+  // Codes are scoped to the user that generated them; the platform tag is
+  // just a hint about intended use. Accept any unused, unexpired code so a
+  // single dashboard "Generate code" button works for both Telegram and Discord.
   const { data: bindCode, error: lookupError } = await supabase
     .from("binding_codes")
     .select("*")
     .eq("code", code)
-    .eq("platform", "telegram")
     .is("used_at", null)
     .gt("expires_at", now)
     .single();
@@ -511,7 +513,6 @@ async function bindDiscord(args: Args): Promise<ToolResult> {
     .from("binding_codes")
     .select("*")
     .eq("code", code)
-    .eq("platform", "discord")
     .is("used_at", null)
     .gt("expires_at", now)
     .single();
