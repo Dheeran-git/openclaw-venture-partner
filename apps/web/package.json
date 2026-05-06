@@ -12,7 +12,6 @@
     "test:isolation": "tsx --env-file=../../.env tests/e2e/auth-isolation.ts"
   },
   "dependencies": {
-    "@next/env": "^16.2.4",
     "@openclaw/agent": "workspace:*",
     "@openclaw/db": "workspace:*",
     "@openclaw/shared": "workspace:*",
