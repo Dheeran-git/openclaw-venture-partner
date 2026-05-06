@@ -1,4 +1,5 @@
-import type { ScrapedLead, Scraper } from "./types";
+import type { ScrapedLead, Scraper, ScrapeHealth, SourceType } from "./types";
+import { inferSourceType } from "./types";
 
 interface StubFixture {
   source_url: string;
@@ -108,7 +109,16 @@ function relevance(fixture: StubFixture, query: string): number {
 
 export const stubScraper: Scraper = {
   name: "stub",
-  async scrape(query: string, limit: number): Promise<ScrapedLead[]> {
+
+  async health(): Promise<ScrapeHealth> {
+    return { ok: true, latency_ms: 0 };
+  },
+
+  async scrape(
+    query: string,
+    limit: number,
+    sources?: SourceType[]
+  ): Promise<ScrapedLead[]> {
     await sleep(450);
 
     const ranked = FIXTURES.map((fixture, idx) => ({
@@ -122,13 +132,18 @@ export const stubScraper: Scraper = {
         a.idx - b.idx
     );
 
+    const sourceFilter = sources && sources.length > 0 ? new Set(sources) : null;
     const now = Date.now();
-    return ranked.slice(0, Math.max(0, limit)).map(({ fixture }) => ({
-      source_url: fixture.source_url,
-      title: fixture.title,
-      description: fixture.description,
-      posted_at: new Date(now - fixture.posted_days_ago * 86_400_000),
-      raw: { ...fixture, scraper: "stub" },
-    }));
+    return ranked
+      .map(({ fixture }) => ({
+        source: inferSourceType(fixture.source_url),
+        source_url: fixture.source_url,
+        title: fixture.title,
+        description: fixture.description,
+        posted_at: new Date(now - fixture.posted_days_ago * 86_400_000),
+        raw: { ...fixture, scraper: "stub" },
+      }))
+      .filter((lead) => !sourceFilter || sourceFilter.has(lead.source))
+      .slice(0, Math.max(0, limit));
   },
 };

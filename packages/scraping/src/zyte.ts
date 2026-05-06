@@ -1,190 +1,128 @@
 /**
- * Zyte scraper adapter for Upwork job search.
+ * Zyte adapter — multi-source dispatcher.
  *
  * Activated by setting SCRAPER=zyte and ZYTE_API_KEY in the environment.
- * Never the default -- stub stays active for demo predictability.
+ * Stub remains the default for demo predictability.
  *
  * Auth: Zyte uses HTTP Basic with the API key as the username and an
  * empty password (the trailing colon in `${apiKey}:` is intentional).
  *
- * Extraction: uses Zyte's browserHtml to get the JS-rendered page, then
- * parses job listings from the HTML. Two strategies are attempted in
- * order: (1) embedded state JSON (Apollo/Next.js cache), (2) DOM
- * attribute pattern matching. Either producing zero results is not an
- * error -- the scout pipeline handles it as "no new leads."
+ * Per build guide §5.2, this adapter:
+ *  - dispatches one Zyte call per requested source,
+ *  - applies per-source rate limits,
+ *  - retries with exponential backoff (1s/4s/16s, max 3) on transient
+ *    errors,
+ *  - writes a `scrape_failures` row when a parser yields zero results so
+ *    the raw HTML can be debugged offline,
+ *  - never throws on a single-source failure — the caller still gets the
+ *    successful sources' results.
  */
-import type { ScrapedLead, Scraper } from "./types";
+import type {
+  ScrapedLead,
+  Scraper,
+  ScrapeHealth,
+  SourceType,
+} from "./types";
+import {
+  upworkSearchUrl,
+  linkedinSearchUrl,
+  indeedSearchUrl,
+  redditSearchUrl,
+  contraSearchUrl,
+  freelancerSearchUrl,
+  xSearchUrl,
+} from "./zyte/sources";
+import { parseUpwork } from "./zyte/parsers/upwork";
+import { parseLinkedIn } from "./zyte/parsers/linkedin";
+import { parseIndeed } from "./zyte/parsers/indeed";
+import { parseReddit } from "./zyte/parsers/reddit";
+import { parseContra } from "./zyte/parsers/contra";
+import { parseFreelancer } from "./zyte/parsers/freelancer";
+import { takeRateToken } from "./zyte/rateLimits";
 
 const ZYTE_ENDPOINT = "https://api.zyte.com/v1/extract";
 
 interface ZyteRequest {
   url: string;
-  browserHtml: boolean;
+  browserHtml?: boolean;
+  httpResponseBody?: boolean;
 }
 
 interface ZyteResponse {
   url: string;
   browserHtml?: string;
+  httpResponseBody?: string; // base64 when ZYTE returns it; we use browserHtml mostly
   httpResponseStatusCode?: number;
 }
 
-interface ParsedJob {
-  source_url: string;
-  title: string;
-  description: string;
-  posted_at: Date;
-}
+const SOURCE_BUILDERS: Record<SourceType, ((q: string) => string) | null> = {
+  upwork: upworkSearchUrl,
+  linkedin: linkedinSearchUrl,
+  indeed: indeedSearchUrl,
+  freelancer: freelancerSearchUrl,
+  contra: contraSearchUrl,
+  reddit: redditSearchUrl,
+  x: xSearchUrl,
+  github: null,
+  other: null,
+};
 
-/**
- * Constructs an Upwork search URL sorted by recency. Recency sort
- * yields fresh postings rather than Upwork's relevance-ranked feed,
- * which better matches the "new leads" use-case.
- */
-function buildSearchUrl(query: string): string {
-  const params = new URLSearchParams({ q: query, sort: "recency" });
-  return `https://www.upwork.com/nx/search/jobs/?${params.toString()}`;
-}
+const SOURCE_PARSERS: Record<
+  SourceType,
+  ((body: string, limit: number) => ScrapedLead[]) | null
+> = {
+  upwork: parseUpwork,
+  linkedin: parseLinkedIn,
+  indeed: parseIndeed,
+  freelancer: parseFreelancer,
+  contra: parseContra,
+  reddit: parseReddit,
+  x: null,
+  github: null,
+  other: null,
+};
 
-/**
- * Walks an embedded state object (Apollo cache / __NEXT_DATA__) looking
- * for Upwork job node shapes. Upwork job objects have a `ciphertext`
- * string (their obfuscated job ID) and a `title` string. Returns an
- * empty array when the state shape doesn't match -- the DOM fallback
- * takes over in that case.
- */
-function extractFromState(state: unknown, limit: number): ParsedJob[] {
-  const results: ParsedJob[] = [];
+const BACKOFF_MS = [1_000, 4_000, 16_000];
 
-  function visit(node: unknown, depth: number): void {
-    if (depth > 12 || results.length >= limit) return;
-    if (!node || typeof node !== "object") return;
-    const obj = node as Record<string, unknown>;
-
-    if (
-      typeof obj["ciphertext"] === "string" &&
-      typeof obj["title"] === "string" &&
-      obj["title"].length > 4
-    ) {
-      const ciphertext = obj["ciphertext"] as string;
-      const title = (obj["title"] as string).trim();
-      const description =
-        typeof obj["description"] === "string"
-          ? (obj["description"] as string).slice(0, 800).trim()
-          : `Upwork job: ${title}`;
-      const posted_at =
-        typeof obj["createdOn"] === "string"
-          ? new Date(obj["createdOn"] as string)
-          : new Date();
-      results.push({
-        source_url: `https://www.upwork.com/jobs/~${ciphertext}`,
-        title,
-        description,
-        posted_at,
-      });
-      return;
-    }
-
-    for (const val of Object.values(obj)) {
-      if (Array.isArray(val)) {
-        for (const item of val) visit(item, depth + 1);
-      } else {
-        visit(val, depth + 1);
-      }
-    }
+async function logScrapeFailure(
+  source: SourceType,
+  url: string,
+  raw: string | undefined,
+  strategy: string,
+  errorMessage: string
+): Promise<void> {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+    return;
+  try {
+    const { createServiceRoleClient } = await import("@openclaw/db/client");
+    const db = createServiceRoleClient() as unknown as {
+      from: (t: string) => {
+        insert: (row: Record<string, unknown>) => Promise<unknown>;
+      };
+    };
+    await db.from("scrape_failures").insert({
+      source,
+      url,
+      raw_html: raw ?? null,
+      parser_strategy: strategy,
+      error_message: errorMessage.slice(0, 1000),
+    });
+  } catch {
+    /* never throw from telemetry */
   }
-
-  visit(state, 0);
-  return results;
 }
 
-/**
- * Parses browser-rendered Upwork HTML into job listings.
- *
- * Strategy 1: find the embedded Apollo/Next.js state JSON and walk it
- * for objects with the Upwork `ciphertext` + `title` shape.
- *
- * Strategy 2: split on job-tile article/section boundaries and regex-
- * extract the URL, title, description, and posted time from each chunk.
- * Conservative: only yields a job if both URL and title are found.
- */
-function parseUpworkJobs(html: string, query: string, limit: number): ParsedJob[] {
-  // Strategy 1: embedded state
-  const statePatterns: RegExp[] = [
-    /window\.__APOLLO_STATE__\s*=\s*(\{[\s\S]+?\})\s*;?\s*<\/script>/,
-    /window\.__NEXT_DATA__\s*=\s*(\{[\s\S]+?\})\s*;?\s*<\/script>/,
-  ];
-  for (const pattern of statePatterns) {
-    const m = html.match(pattern);
-    if (!m) continue;
+async function zyteFetch(
+  authHeader: string,
+  request: ZyteRequest
+): Promise<ZyteResponse> {
+  let lastErr: Error | undefined;
+  for (let attempt = 0; attempt < BACKOFF_MS.length; attempt++) {
     try {
-      const state = JSON.parse(m[1]!) as unknown;
-      const jobs = extractFromState(state, limit);
-      if (jobs.length > 0) return jobs;
-    } catch {
-      // malformed JSON -- fall through
-    }
-  }
-
-  // Strategy 2: DOM pattern matching
-  const results: ParsedJob[] = [];
-
-  // Upwork job tiles are wrapped in <article> or <section> with "job-tile"
-  // in the class or a data-test attribute. Split on the opening tag.
-  const chunks = html.split(/(?=<(?:article|section)[^>]*(?:job-tile|JobTile)[^>]*>)/i);
-
-  for (const chunk of chunks.slice(1)) {
-    if (results.length >= limit) break;
-
-    // Job URL -- /jobs/~<alphanum>
-    const urlM = chunk.match(/href="(\/jobs\/~[A-Za-z0-9_-]{8,32}[^"]*)"/);
-    if (!urlM) continue;
-    const source_url = `https://www.upwork.com${urlM[1]!.split("?")[0]!}`;
-
-    // Title -- inside an anchor inside an h2/h3, or a data-test attr
-    const titleM =
-      chunk.match(/data-test="job-tile-title"[^>]*>([^<]{4,200})<\//) ??
-      chunk.match(/<h[23][^>]*>[\s\S]{0,60}?<a[^>]*>([^<]{4,200})<\/a>/) ??
-      chunk.match(/<h[23][^>]*>([^<]{4,200})<\/h[23]>/);
-    if (!titleM) continue;
-    const title = titleM[1]!.trim().replace(/\s+/g, " ");
-
-    // Description snippet
-    const descM =
-      chunk.match(/data-test="(?:job-description-text|UpCLineClamp)[^"]*"[^>]*>([\s\S]{10,500}?)<\//) ??
-      chunk.match(/<p[^>]*>([\s\S]{10,400}?)<\/p>/);
-    const description = descM
-      ? descM[1]!.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
-      : `Upwork posting found via search for "${query}"`;
-
-    // Posted time from <time datetime="...">
-    const timeM = chunk.match(/<time[^>]*datetime="([^"]+)"/);
-    const posted_at = timeM ? new Date(timeM[1]!) : new Date();
-
-    results.push({ source_url, title, description, posted_at });
-  }
-
-  return results.slice(0, limit);
-}
-
-/**
- * Creates a Zyte-backed Scraper that targets Upwork job search.
- *
- * The returned scraper satisfies the same `Scraper` interface as the
- * stub, so the scout pipeline runs identically regardless of which
- * adapter is active.
- */
-export function makeZyteScraper(apiKey: string): Scraper {
-  const authHeader = `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`;
-
-  return {
-    name: "zyte",
-
-    async scrape(query: string, limit: number): Promise<ScrapedLead[]> {
-      const searchUrl = buildSearchUrl(query);
-
-      const request: ZyteRequest = { url: searchUrl, browserHtml: true };
-
-      const response = await fetch(ZYTE_ENDPOINT, {
+      const res = await fetch(ZYTE_ENDPOINT, {
         method: "POST",
         headers: {
           Authorization: authHeader,
@@ -193,38 +131,133 @@ export function makeZyteScraper(apiKey: string): Scraper {
         body: JSON.stringify(request),
         signal: AbortSignal.timeout(90_000),
       });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "(no body)");
+        const err = new Error(`Zyte ${res.status}: ${body.slice(0, 200)}`);
+        // 4xx: don't retry. 5xx + network: retry.
+        if (res.status >= 400 && res.status < 500) throw err;
+        lastErr = err;
+      } else {
+        return (await res.json()) as ZyteResponse;
+      }
+    } catch (err) {
+      lastErr = err as Error;
+    }
+    const delay = BACKOFF_MS[attempt]!;
+    await new Promise((r) => setTimeout(r, delay));
+  }
+  throw lastErr ?? new Error("zyte: exhausted retries");
+}
 
-      if (!response.ok) {
-        const body = await response.text().catch(() => "(no body)");
-        throw new Error(
-          `Zyte API ${response.status} for "${query}": ${body}`
+export function makeZyteScraper(apiKey: string): Scraper {
+  const authHeader = `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`;
+
+  async function scrapeOne(
+    source: SourceType,
+    query: string,
+    limit: number
+  ): Promise<ScrapedLead[]> {
+    const buildUrl = SOURCE_BUILDERS[source];
+    const parse = SOURCE_PARSERS[source];
+    if (!buildUrl || !parse) return [];
+
+    const url = buildUrl(query);
+    await takeRateToken(source);
+
+    // Reddit returns JSON via .json suffix; httpResponseBody is enough.
+    const wantsHtml = source !== "reddit";
+    const request: ZyteRequest = wantsHtml
+      ? { url, browserHtml: true }
+      : { url, httpResponseBody: true };
+
+    let body: string;
+    try {
+      const data = await zyteFetch(authHeader, request);
+      body = wantsHtml
+        ? data.browserHtml ?? ""
+        : data.httpResponseBody
+          ? Buffer.from(data.httpResponseBody, "base64").toString("utf8")
+          : "";
+      if (!body) {
+        await logScrapeFailure(source, url, undefined, "zyte-empty", "empty body");
+        return [];
+      }
+    } catch (err) {
+      await logScrapeFailure(
+        source,
+        url,
+        undefined,
+        "zyte-fetch",
+        (err as Error).message
+      );
+      return [];
+    }
+
+    try {
+      const leads = parse(body, limit);
+      if (leads.length === 0) {
+        await logScrapeFailure(
+          source,
+          url,
+          body.slice(0, 100_000),
+          `${source}-parser`,
+          "parser yielded zero leads"
         );
       }
+      return leads;
+    } catch (err) {
+      await logScrapeFailure(
+        source,
+        url,
+        body.slice(0, 100_000),
+        `${source}-parser-throw`,
+        (err as Error).message
+      );
+      return [];
+    }
+  }
 
-      const data = (await response.json()) as ZyteResponse;
-      const html = data.browserHtml;
+  return {
+    name: "zyte",
 
-      if (!html) {
-        throw new Error(
-          `Zyte returned no browserHtml for "${query}" ` +
-            `(HTTP status from target: ${data.httpResponseStatusCode ?? "unknown"})`
-        );
+    async health(): Promise<ScrapeHealth> {
+      const startedAt = Date.now();
+      try {
+        const res = await fetch(ZYTE_ENDPOINT, {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url: "https://example.com", browserHtml: true }),
+          signal: AbortSignal.timeout(8_000),
+        });
+        return {
+          ok: res.ok,
+          latency_ms: Date.now() - startedAt,
+          error: res.ok ? undefined : `${res.status}`,
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          latency_ms: Date.now() - startedAt,
+          error: (err as Error).message,
+        };
       }
+    },
 
-      const parsed = parseUpworkJobs(html, query, limit);
-
-      return parsed.map((job) => ({
-        source_url: job.source_url,
-        title: job.title,
-        description: job.description,
-        posted_at: job.posted_at,
-        raw: {
-          scraper: "zyte",
-          query,
-          searchUrl,
-          title: job.title,
-        },
-      }));
+    async scrape(
+      query: string,
+      limit: number,
+      sources?: SourceType[]
+    ): Promise<ScrapedLead[]> {
+      const targets = sources && sources.length > 0 ? sources : (["upwork"] as SourceType[]);
+      const perSourceLimit = Math.max(1, Math.ceil(limit / targets.length));
+      const results = await Promise.all(
+        targets.map((s) => scrapeOne(s, query, perSourceLimit))
+      );
+      const flat = results.flat();
+      return flat.slice(0, Math.max(0, limit));
     },
   };
 }
