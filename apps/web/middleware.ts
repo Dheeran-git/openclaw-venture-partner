@@ -7,6 +7,8 @@ const PUBLIC_PATHS = [
   "/api/mcp",
   "/api/telegram/",
   "/api/email/inbound",
+  "/api/discord/",
+  "/api/health",
 ];
 
 function normalizeUrl(raw: string): string {
