@@ -66,11 +66,17 @@ async function main() {
   console.log(`\nscout-dryrun  query="${query}"  limit=${limit}  user=${USER_ID}\n`);
 
   const supabase = createServiceRoleClient();
-  const result = await runScoutPipeline(fakeStep, supabase, fakePublish, {
-    user_id: USER_ID,
-    query,
-    limit,
-  });
+  const result = await runScoutPipeline(
+    fakeStep,
+    supabase,
+    fakePublish,
+    { user_id: USER_ID, query, limit },
+    async (ev) => {
+      console.log(
+        `        [event] ${ev.name} -> lead_id=${ev.data.lead_id} (id=${ev.id ?? "none"})`
+      );
+    }
+  );
 
   console.log(`\nresult:`);
   console.log(`  scraper             : ${result.scraper}`);
@@ -78,6 +84,7 @@ async function main() {
   console.log(`  inserted            : ${result.inserted}`);
   console.log(`  scored              : ${result.scored}`);
   console.log(`  alreadyScored skip  : ${result.skippedAlreadyScored}`);
+  console.log(`  autoPitched         : ${result.autoPitched}`);
   console.log(`  durationMs          : ${result.durationMs}`);
   console.log("");
 }

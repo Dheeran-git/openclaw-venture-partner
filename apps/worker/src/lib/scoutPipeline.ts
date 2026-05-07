@@ -78,11 +78,33 @@ export interface PipelineStep {
   run<T>(name: string, fn: () => Promise<T>): Promise<T>;
 }
 
+/**
+ * Event-dispatch callback so the pipeline can fan out follow-up Inngest
+ * events (auto-pitch on high score) without importing the Inngest client
+ * directly. The Inngest shell wires this to inngest.send(); the dryrun
+ * smoke stubs it to a console log so the pipeline still runs offline.
+ */
+export type DispatchEventFn = (event: {
+  name: "pitch/draft-requested";
+  data: { user_id: string; lead_id: string };
+  id?: string;
+}) => Promise<void>;
+
 export interface ScoutInput {
   user_id: string;
   query: string;
   limit?: number;
   sources?: SourceType[];
+}
+
+const DEFAULT_AUTO_PITCH_THRESHOLD = 80;
+const DEFAULT_AUTO_PITCH_MAX_PER_RUN = 5;
+
+function intFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 export interface ScoutResult {
@@ -91,6 +113,7 @@ export interface ScoutResult {
   inserted: number;
   scored: number;
   skippedAlreadyScored: number;
+  autoPitched: number;
   durationMs: number;
 }
 
@@ -113,7 +136,8 @@ export async function runScoutPipeline(
   step: PipelineStep,
   supabase: DB,
   publish: PublishProgressFn,
-  input: ScoutInput
+  input: ScoutInput,
+  dispatchEvent?: DispatchEventFn
 ): Promise<ScoutResult> {
   const startedAt = Date.now();
   const limit = input.limit ?? 10;
@@ -236,6 +260,7 @@ export async function runScoutPipeline(
       inserted: 0,
       scored: 0,
       skippedAlreadyScored: 0,
+      autoPitched: 0,
       durationMs: Date.now() - startedAt,
     };
   }
@@ -360,12 +385,71 @@ export async function runScoutPipeline(
     if (error) {
       throw new Error(`insert scores failed: ${error.message}`);
     }
+  });
+
+  // ============================================================
+  // PHASE 5: auto-pitch fan-out for top scorers
+  // ============================================================
+  const autoPitchedCount = await step.run("fan-out-auto-pitch", async () => {
+    if (!dispatchEvent || phase3.scored.length === 0) {
+      await publish(
+        "ok",
+        `Scout complete -- ${phase2.rows.length} leads ready`,
+        "done"
+      );
+      return 0;
+    }
+
+    const threshold = intFromEnv(
+      "AUTO_PITCH_SCORE_THRESHOLD",
+      DEFAULT_AUTO_PITCH_THRESHOLD
+    );
+    const maxPerRun = intFromEnv(
+      "AUTO_PITCH_MAX_PER_RUN",
+      DEFAULT_AUTO_PITCH_MAX_PER_RUN
+    );
+
+    type ScoredRow = ScoreLeadResult & { lead_id: string };
+    const candidates = (phase3.scored as ScoredRow[])
+      .filter((r) => r.score >= threshold)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxPerRun);
+
+    if (candidates.length === 0) {
+      await publish(
+        "ok",
+        `Scout complete -- ${phase2.rows.length} leads ready`,
+        "done"
+      );
+      return 0;
+    }
+
+    await publish(
+      "live",
+      `Drafting pitches for top ${candidates.length} leads`,
+      `${candidates.length} queued`
+    );
+
+    // Fan out in parallel. Each event carries an id so retries dedupe at
+    // Inngest level. The draftPitch worker is idempotent at the
+    // llm_calls layer too (Phase 8 idempotency_key), so this is
+    // belt-and-suspenders.
+    await Promise.all(
+      candidates.map((c) =>
+        dispatchEvent({
+          name: "pitch/draft-requested",
+          data: { user_id: input.user_id, lead_id: c.lead_id },
+          id: `auto-pitch:${c.lead_id}`,
+        })
+      )
+    );
 
     await publish(
       "ok",
-      `Scout complete -- ${phase2.rows.length} leads ready`,
+      `Scout complete -- ${phase2.rows.length} leads, ${candidates.length} pitching`,
       "done"
     );
+    return candidates.length;
   });
 
   return {
@@ -374,6 +458,7 @@ export async function runScoutPipeline(
     inserted: phase2.rows.length,
     scored: phase3.scored.length,
     skippedAlreadyScored: phase3.skippedAlreadyScored,
+    autoPitched: autoPitchedCount,
     durationMs: Date.now() - startedAt,
   };
 }

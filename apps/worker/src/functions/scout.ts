@@ -36,11 +36,23 @@ export const scout = inngest.createFunction(
       run: async <T>(name: string, fn: () => Promise<T>): Promise<T> =>
         (await step.run(name, fn)) as unknown as T,
     };
-    return runScoutPipeline(adapted, supabase, publish, {
-      user_id: event.data.user_id,
-      query: event.data.query,
-      ...(event.data.limit !== undefined && { limit: event.data.limit }),
-      ...(event.data.sources !== undefined && { sources: event.data.sources }),
-    });
+    return runScoutPipeline(
+      adapted,
+      supabase,
+      publish,
+      {
+        user_id: event.data.user_id,
+        query: event.data.query,
+        ...(event.data.limit !== undefined && { limit: event.data.limit }),
+        ...(event.data.sources !== undefined && { sources: event.data.sources }),
+      },
+      async (ev) => {
+        await inngest.send({
+          name: ev.name,
+          data: ev.data,
+          ...(ev.id !== undefined && { id: ev.id }),
+        });
+      }
+    );
   }
 );
