@@ -195,7 +195,22 @@ async function handleComponent(
   }
 
   if (!result.ok) {
-    return ephemeralReply(`Error: ${result.error ?? "unknown"}`);
+    // Friendly copy parity with the Telegram webhook handler.
+    if (result.error === "not_draft") {
+      return ephemeralReply("ℹ️ This pitch has already been actioned.");
+    }
+    if (result.error === "stale_draft") {
+      return ephemeralReply(
+        "⚠️ This pitch has changed since you reviewed it. Please open the dashboard for the latest version."
+      );
+    }
+    if (result.error === "forbidden") {
+      return ephemeralReply("🚫 You don't have permission to action this pitch.");
+    }
+    if (result.error === "not_found") {
+      return ephemeralReply("❓ This pitch no longer exists.");
+    }
+    return ephemeralReply(`Couldn't complete that action: ${result.error ?? "unknown error"}`);
   }
 
   await supabase
