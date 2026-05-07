@@ -1,10 +1,19 @@
 /**
- * Freelancer.com parser. The search results page renders project cards with
- * `data-project-id` attributes. This parser is best-effort, single-strategy.
+ * Freelancer.com parser.
+ *
+ * Strategy 1: schema.org JobPosting blocks embedded as JSON-LD. Freelancer
+ *             ships these on search result pages for SEO; they're stable
+ *             across redesigns of the card markup.
+ * Strategy 2: DOM regex on `data-project-id` attributes. Used only if
+ *             JSON-LD is absent.
  */
 import type { ScrapedLead } from "../../types";
+import { parseJobPostingJsonLd } from "./jsonld";
 
 export function parseFreelancer(html: string, limit: number): ScrapedLead[] {
+  const jsonld = parseJobPostingJsonLd(html, "freelancer", limit);
+  if (jsonld.length > 0) return jsonld;
+
   const results: ScrapedLead[] = [];
   const chunks = html.split(/(?=<div[^>]*data-project-id=)/i);
   for (const chunk of chunks.slice(1)) {

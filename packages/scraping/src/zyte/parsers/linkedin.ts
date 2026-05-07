@@ -2,15 +2,22 @@
  * LinkedIn parser. LinkedIn is the most fragile of the sources — they
  * redesign their search HTML every few months and aggressively rate-limit.
  *
- * Strategy: parse <li> elements with `job-search-card` class.
+ * Strategy 1: schema.org JobPosting blocks embedded as JSON-LD. Stable
+ *             across redesigns since LinkedIn ships them for SEO.
+ * Strategy 2: DOM regex on `job-search-card` <li> elements. Used only if
+ *             JSON-LD is absent (e.g. a stale cache or partial render).
  *
- * If this breaks: check `scrape_failures` for raw HTML; LinkedIn's class
+ * If both fail: check `scrape_failures` for raw HTML; LinkedIn's class
  * names typically just gain a hash suffix (e.g. `job-search-card-12abc`).
  * Loosen the regex.
  */
 import type { ScrapedLead } from "../../types";
+import { parseJobPostingJsonLd } from "./jsonld";
 
 export function parseLinkedIn(html: string, limit: number): ScrapedLead[] {
+  const jsonld = parseJobPostingJsonLd(html, "linkedin", limit);
+  if (jsonld.length > 0) return jsonld;
+
   const results: ScrapedLead[] = [];
   const chunks = html.split(/(?=<li[^>]*class="[^"]*job-search-card)/i);
   for (const chunk of chunks.slice(1)) {
