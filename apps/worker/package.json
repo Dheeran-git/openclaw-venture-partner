@@ -6,6 +6,7 @@
   "main": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "dev": "tsx watch src/index.ts",
     "scout-dryrun": "tsx scripts/scout-dryrun.ts"
   },
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "tsx": "4.19.2",
-    "typescript": "5.6.3"
+    "typescript": "5.6.3",
+    "vitest": "^4.1.5"
   }
 }

@@ -34,4 +34,4 @@ jobs:
         continue-on-error: true
 
       - name: Vitest
-        run: pnpm --filter @openclaw/agent test
+        run: pnpm -r --filter @openclaw/agent --filter @openclaw/scraping --filter @openclaw/worker run test
