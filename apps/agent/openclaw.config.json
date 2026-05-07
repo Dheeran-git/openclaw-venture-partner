@@ -61,21 +61,21 @@
     "telegram": {
       "enabled": false,
       "tokenEnv": "TELEGRAM_BOT_TOKEN",
-      "comment": "Wired via standalone /api/telegram/webhook (Railway free-tier OOMs the bot library inside the Gateway). Keep disabled here."
+      "comment": "Telegram I/O lives in our MCP tool path: /api/telegram/webhook receives updates and notifyAgent (packages/agent/src/mcp-tools/index.ts) calls the Bot API directly for outbound. This is Vercel-hosted and bulletproof; the Gateway is not in the chat loop for Telegram. Flip enabled=true here only after you've verified the Gateway host can hold both bot libraries (~250-300 MB combined) — GCP e2-micro Always Free with 2 GB swap qualifies."
     },
     "discord": {
       "enabled": false,
       "tokenEnv": "DISCORD_BOT_TOKEN",
       "publicKeyEnv": "DISCORD_PUBLIC_KEY",
       "appIdEnv": "DISCORD_APP_ID",
-      "comment": "Wired via standalone /api/discord/interactions webhook. Flip enabled=true on Gateway if you ever want the Gateway to handle Discord directly."
+      "comment": "Same pattern as telegram: /api/discord/interactions handles inbound, notifyAgent calls Discord Bot API for outbound DMs and approve/reject embeds. Gateway not in the loop. Flip on once Gateway hosting is RAM-stable."
     },
     "slack": {
       "enabled": false,
       "tokenEnv": "SLACK_BOT_TOKEN",
       "signingSecretEnv": "SLACK_SIGNING_SECRET",
       "appIdEnv": "SLACK_APP_ID",
-      "comment": "Scaffold-only. Activation: create a Slack app at api.slack.com/apps, add scopes chat:write+commands+im:*, paste credentials into env, flip enabled=true. ~30 minutes total."
+      "comment": "Scaffold. Unlike telegram/discord, we have no MCP-tool-direct path for Slack — activating Slack means letting the Gateway own it. Flip enabled=true after pasting credentials in /setup wizard. ~30 minutes setup."
     },
     "whatsapp": {
       "enabled": false,

@@ -137,6 +137,39 @@ async function sendDiscordDmMessage(
 }
 
 // ---------------------------------------------------------------------------
+// Phase 12 Stage A — Gateway-relay path for notifyAgent. Env-gated so the
+// default (direct Telegram/Discord Bot API) behavior stays unchanged. Set
+// OPENCLAW_GATEWAY_PRIMARY=true after the Gateway is up on its production
+// host and you've verified the channel plugins handle outbound.
+// On any Gateway error, we log and fall back to the direct path so HITL
+// approvals never silently drop.
+// ---------------------------------------------------------------------------
+async function tryGatewayNotify(
+  args: Args
+): Promise<{ ok: true; via: "gateway"; data?: unknown } | { ok: false; error: string }> {
+  const base = process.env.OPENCLAW_GATEWAY_URL?.trim();
+  if (!base) return { ok: false, error: "no_gateway_url" };
+  const path = process.env.OPENCLAW_GATEWAY_NOTIFY_PATH?.trim() || "/api/notify";
+  const token = process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ?? "";
+  try {
+    const res = await fetch(base.replace(/\/$/, "") + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(args),
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!res.ok) return { ok: false, error: `gateway_status_${res.status}` };
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { ok: true, via: "gateway", data };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Lead-related tools
 // ---------------------------------------------------------------------------
 
@@ -552,6 +585,12 @@ async function notifyAgent(args: Args): Promise<ToolResult> {
 
   if (!user_id || !kind || !payload) return { ok: false, error: "missing_args" };
   if (kind !== "pitch_drafted") return { ok: false, error: "unknown_kind" };
+
+  if (process.env.OPENCLAW_GATEWAY_PRIMARY === "true") {
+    const relay = await tryGatewayNotify(args);
+    if (relay.ok) return { ok: true, via: "gateway", data: relay.data };
+    console.warn("[notifyAgent] Gateway relay failed, falling back to direct Bot API:", relay.error);
+  }
 
   const pitch_id = payload.pitch_id as string;
   const payload_hash = payload.payload_hash as string;

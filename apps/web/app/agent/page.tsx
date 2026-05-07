@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Wrench,
   BookOpen,
+  MessageSquare,
 } from "lucide-react";
 import { Sidebar } from "../../components/Sidebar";
 import { useSession } from "../../lib/auth";
@@ -178,6 +179,13 @@ export default function AgentPage() {
           </div>
 
           <StatusCard status={status} loading={loading} controlUrl={controlUrl ?? null} />
+
+          {isConnected && controlUrl ? (
+            <>
+              <SectionHeader icon={MessageSquare} title="Chat with your agent" />
+              <ChatPanel controlUrl={controlUrl} />
+            </>
+          ) : null}
 
           <SectionHeader icon={BookOpen} title="Skills deployed to the Gateway" />
           <div style={{ display: "grid", gap: 8, marginBottom: 32 }}>
@@ -402,6 +410,56 @@ function SkillRow({ skill }: { skill: SkillSpec }) {
   );
 }
 
+function ChatPanel({ controlUrl }: { controlUrl: string }) {
+  return (
+    <div
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: 12,
+        padding: 4,
+        marginBottom: 32,
+        overflow: "hidden",
+      }}
+    >
+      <iframe
+        src={controlUrl}
+        title="OpenClaw Gateway"
+        loading="lazy"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+        style={{
+          width: "100%",
+          height: 520,
+          border: 0,
+          borderRadius: 8,
+          display: "block",
+          background: "var(--bg-elevated)",
+        }}
+      />
+      <div
+        style={{
+          fontSize: 11,
+          color: "var(--fg-dim)",
+          padding: "10px 12px 8px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span>Talk in natural language — the Gateway routes via skills + MCP.</span>
+        <a
+          href={controlUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          style={{ color: "var(--brand-coral)", textDecoration: "none" }}
+        >
+          Open in new tab ↗
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function ArchDiagram({ isConnected }: { isConnected: boolean }) {
   const lineColor = isConnected ? "#10B981" : "#4A5268";
   return (
@@ -428,7 +486,7 @@ function ArchDiagram({ isConnected }: { isConnected: boolean }) {
               │
               ▼
   ┌──────────────────────────────────┐
-  │   OpenClaw Gateway (Railway)     │   skills loaded:
+  │  OpenClaw Gateway (GCP e2-micro) │   skills loaded:
   │   - matches user → skill         │   scout, draft_pitch,
   │   - calls our MCP for each tool  │   approve_pitch, ...
   └──────────────────────────────────┘
