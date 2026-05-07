@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Settings,
   LogOut,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { getSupabaseBrowser } from "../lib/supabaseBrowser";
@@ -35,6 +36,7 @@ function buildPrimary(inboxCount: number, pitchesCount: number): NavItem[] {
 }
 
 const TOOLS: NavItem[] = [
+  { id: "agent", icon: Sparkles, label: "Agent", href: "/agent" },
   { id: "templates", icon: LayoutGrid, label: "Templates", future: true },
   { id: "settings", icon: Settings, label: "Settings", href: "/settings/connect" },
 ];
