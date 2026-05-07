@@ -23,12 +23,12 @@ export function LeadTable({
   selectedId?: string;
   onSelect: (id: string) => void;
 }) {
+  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
   if (!loading && leads.length === 0) {
     return <EmptyState />;
   }
-
-  const [sortKey, setSortKey] = useState<SortKey>("score");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const sorted = [...leads].sort((a, b) => {
     const cmp = compare(a, b, sortKey);
