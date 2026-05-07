@@ -101,7 +101,7 @@ Output:
 {
   "subject": "Next.js + Prisma contractor — 10 hrs/week availability",
   "body": "Hi — your stack (Next.js, Postgres, Prisma) matches my day-to-day exactly. I've been doing part-time contractor work alongside a couple of product teams over the past year; it works well when there's a clear ticket backlog and async communication.\\n\\nI'm at $[hourly_rate]/hr. Most clients in this range end up somewhere between $X and $Y/hr depending on complexity. Happy to be transparent about my range upfront so we don't waste each other's time if it's not a fit.\\n\\nWould a quick async intro — a few sentences from you about the stack and what's next on the backlog — be the right starting point?",
-  "reasoning": "No budget stated and hourly rate TBD makes this a medium-confidence pitch. I named my rate range upfront to filter early and signal confidence. The async intro ask is exact so I led with that.",
+  "reasoning": "No budget stated and hourly rate TBD makes this a medium-confidence pitch. I named my rate range upfront to filter early and signal confidence. The async intro ask is lower friction than a call for an early-stage conversation. Stack match is exact so I led with that.",
   "confidence": "medium"
 }
 \`\`\`
