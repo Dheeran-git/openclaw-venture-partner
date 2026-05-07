@@ -1,5 +1,6 @@
 import { createServiceRoleClient } from "@openclaw/db";
 import { computePayloadHash } from "@openclaw/agent/drafting";
+import { handlers as mcpHandlers } from "@openclaw/agent/mcp-tools";
 import { getSession } from "../../../../lib/supabaseServer";
 
 /**
@@ -160,6 +161,28 @@ export async function POST() {
     resource_id: lead.id,
     metadata: { lead_id: lead.id, pitch_id: pitchId },
   });
+
+  // ── 7. Fan out the "pitch drafted" notification to every bound chat
+  //       platform (Telegram + Discord) — the worker path normally does this
+  //       at draftPitch completion, but the seed bypasses the worker so we
+  //       fire it manually. Fire-and-forget; failures are non-fatal.
+  void (async () => {
+    try {
+      await mcpHandlers.notifyAgent!({
+        user_id: userId,
+        kind: "pitch_drafted",
+        payload: {
+          pitch_id: pitchId,
+          payload_hash: payloadHash,
+          subject: DEMO_PITCH_SUBJECT,
+          body: DEMO_PITCH_BODY,
+          score: 95,
+        },
+      });
+    } catch (err) {
+      console.warn("[demo/seed] notifyAgent threw:", (err as Error).message);
+    }
+  })();
 
   return Response.json({
     ok: true,
