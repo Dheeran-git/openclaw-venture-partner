@@ -165,24 +165,24 @@ export async function POST() {
   // ── 7. Fan out the "pitch drafted" notification to every bound chat
   //       platform (Telegram + Discord) — the worker path normally does this
   //       at draftPitch completion, but the seed bypasses the worker so we
-  //       fire it manually. Fire-and-forget; failures are non-fatal.
-  void (async () => {
-    try {
-      await mcpHandlers.notifyAgent!({
-        user_id: userId,
-        kind: "pitch_drafted",
-        payload: {
-          pitch_id: pitchId,
-          payload_hash: payloadHash,
-          subject: DEMO_PITCH_SUBJECT,
-          body: DEMO_PITCH_BODY,
-          score: 95,
-        },
-      });
-    } catch (err) {
-      console.warn("[demo/seed] notifyAgent threw:", (err as Error).message);
-    }
-  })();
+  //       fire it manually. Awaited inline because Vercel serverless tears
+  //       the function down the instant we return; fire-and-forget would
+  //       not survive that. Failures are caught so they never break the seed.
+  try {
+    await mcpHandlers.notifyAgent!({
+      user_id: userId,
+      kind: "pitch_drafted",
+      payload: {
+        pitch_id: pitchId,
+        payload_hash: payloadHash,
+        subject: DEMO_PITCH_SUBJECT,
+        body: DEMO_PITCH_BODY,
+        score: 95,
+      },
+    });
+  } catch (err) {
+    console.warn("[demo/seed] notifyAgent threw:", (err as Error).message);
+  }
 
   return Response.json({
     ok: true,
