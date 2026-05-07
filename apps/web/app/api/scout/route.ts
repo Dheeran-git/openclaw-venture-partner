@@ -3,9 +3,19 @@ import { inngest } from "@openclaw/worker";
 import { getSession } from "../../../lib/supabaseServer";
 import { rateLimit, rateLimited } from "../../../lib/rateLimit";
 
+const SOURCE_ENUM = z.enum([
+  "upwork",
+  "linkedin",
+  "indeed",
+  "reddit",
+  "contra",
+  "freelancer",
+]);
+
 const ScoutBody = z.object({
   query: z.string().trim().min(2).max(120),
   limit: z.number().int().min(1).max(50).optional(),
+  sources: z.array(SOURCE_ENUM).min(1).max(6).optional(),
 });
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -58,6 +68,7 @@ export async function POST(req: Request) {
         user_id: session.user.id,
         query: parsed.data.query,
         ...(parsed.data.limit !== undefined && { limit: parsed.data.limit }),
+        ...(parsed.data.sources !== undefined && { sources: parsed.data.sources }),
       },
     });
   } catch (err) {

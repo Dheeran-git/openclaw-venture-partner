@@ -29,6 +29,7 @@ type Json = Database["public"]["Tables"]["leads"]["Row"]["raw"];
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 type ScoreInsert = Database["public"]["Tables"]["scores"]["Insert"];
 import { getScraper } from "@openclaw/scraping";
+import type { SourceType } from "@openclaw/scraping";
 import {
   normalizeScrapedLead,
   type NormalizedLead,
@@ -45,6 +46,32 @@ import { leadHash } from "./leadHash";
  */
 export const SCORE_CONCURRENCY = 5;
 
+const SUPPORTED_SCRAPE_SOURCES: readonly SourceType[] = [
+  "upwork",
+  "linkedin",
+  "indeed",
+  "reddit",
+  "contra",
+  "freelancer",
+] as const;
+
+function parseSourcesEnv(raw: string | undefined): SourceType[] | null {
+  if (!raw) return null;
+  const allowed = new Set<SourceType>(SUPPORTED_SCRAPE_SOURCES);
+  const parsed = raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter((s): s is SourceType => allowed.has(s as SourceType));
+  return parsed.length > 0 ? parsed : null;
+}
+
+function resolveSources(input: SourceType[] | undefined): SourceType[] {
+  if (input && input.length > 0) return input;
+  const fromEnv = parseSourcesEnv(process.env.SCOUT_DEFAULT_SOURCES);
+  if (fromEnv) return fromEnv;
+  return [...SUPPORTED_SCRAPE_SOURCES];
+}
+
 /** Minimal subset of inngest's `step` we depend on. Lets the smoke
  *  drive the same pipeline without spinning up Inngest. */
 export interface PipelineStep {
@@ -55,6 +82,7 @@ export interface ScoutInput {
   user_id: string;
   query: string;
   limit?: number;
+  sources?: SourceType[];
 }
 
 export interface ScoutResult {
@@ -89,15 +117,20 @@ export async function runScoutPipeline(
 ): Promise<ScoutResult> {
   const startedAt = Date.now();
   const limit = input.limit ?? 10;
+  const sources = resolveSources(input.sources);
 
   // ============================================================
   // PHASE 1: scrape
   // ============================================================
   const phase1 = await step.run("scrape", async () => {
-    await publish("live", `Scouting "${input.query}"`, "starting");
+    await publish(
+      "live",
+      `Scouting "${input.query}" across ${sources.length} source${sources.length === 1 ? "" : "s"}`,
+      "starting"
+    );
 
     const scraper = getScraper();
-    const scraped = await scraper.scrape(input.query, limit);
+    const scraped = await scraper.scrape(input.query, limit, sources);
 
     const records: ScrapedRecord[] = scraped.map((s) => {
       const normalized = normalizeScrapedLead(s);
@@ -114,7 +147,7 @@ export async function runScoutPipeline(
 
     await publish(
       "ok",
-      `Scraped ${records.length} from ${scraper.name}`,
+      `Scraped ${records.length} from ${scraper.name} (${sources.length} source${sources.length === 1 ? "" : "s"})`,
       `${records.length} found`
     );
 

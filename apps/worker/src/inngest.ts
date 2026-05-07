@@ -16,7 +16,14 @@ export type Events = {
     data: { ping?: string };
   };
   "scout/requested": {
-    data: { user_id: string; query: string; limit?: number };
+    data: {
+      user_id: string;
+      query: string;
+      limit?: number;
+      sources?: Array<
+        "upwork" | "linkedin" | "indeed" | "reddit" | "contra" | "freelancer"
+      >;
+    };
   };
   "lead/scored": {
     data: { lead_id: string; score: number };
