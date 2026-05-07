@@ -50,6 +50,7 @@ export function Topbar({
           aria-label="Scout query"
           spellCheck={false}
           disabled={running}
+          data-scout-query
         />
         <button
           type="button"

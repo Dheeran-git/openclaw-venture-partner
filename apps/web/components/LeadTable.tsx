@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUp, ArrowDown, ChevronRight } from "lucide-react";
+import { ArrowUp, ArrowDown, ChevronRight, Compass } from "lucide-react";
 import {
   SOURCE_DOT,
   SOURCE_LABEL,
@@ -14,13 +14,19 @@ type SortKey = "score" | "title" | "age";
 
 export function LeadTable({
   leads,
+  loading = false,
   selectedId,
   onSelect,
 }: {
   leads: LeadRow[];
+  loading?: boolean;
   selectedId?: string;
   onSelect: (id: string) => void;
 }) {
+  if (!loading && leads.length === 0) {
+    return <EmptyState />;
+  }
+
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -119,6 +125,80 @@ export function LeadTable({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  function focusScoutInput() {
+    if (typeof document === "undefined") return;
+    const el = document.querySelector<HTMLInputElement>(
+      "[data-scout-query]"
+    );
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+        padding: "64px 24px",
+        background: "var(--bg-card)",
+        border: "1px dashed var(--border-subtle)",
+        borderRadius: 12,
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          background: "rgba(255,77,77,0.10)",
+          border: "1px solid rgba(255,77,77,0.30)",
+          display: "grid",
+          placeItems: "center",
+          color: "var(--brand-coral)",
+        }}
+      >
+        <Compass size={20} strokeWidth={1.5} />
+      </div>
+      <div
+        className="eyebrow"
+        style={{ fontSize: 11, color: "var(--fg-dim)", letterSpacing: "0.08em" }}
+      >
+        no leads yet
+      </div>
+      <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
+        Run your first scout
+      </h2>
+      <p
+        style={{
+          color: "var(--fg-secondary)",
+          fontSize: 13,
+          lineHeight: 1.55,
+          maxWidth: 420,
+          margin: 0,
+        }}
+      >
+        Scout pulls real freelance leads from Upwork, LinkedIn, Indeed,
+        Reddit, Contra, and Freelancer in parallel, scores each one against
+        your profile, and auto-drafts pitches for the strongest matches.
+      </p>
+      <button
+        type="button"
+        onClick={focusScoutInput}
+        className="oc-btn oc-btn-primary"
+        style={{ marginTop: 4 }}
+      >
+        Pick a query
+      </button>
     </div>
   );
 }

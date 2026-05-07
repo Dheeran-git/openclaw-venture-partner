@@ -7,6 +7,7 @@ import { StatCards } from "../components/StatCards";
 import { LeadTable } from "../components/LeadTable";
 import { ActivityRail } from "../components/ActivityRail";
 import { LeadDetail } from "../components/LeadDetail";
+import { ToastStack, pushToast } from "../components/ToastStack";
 import type { StatCard } from "../lib/fixtures";
 import { useLeads } from "../hooks/useLeads";
 import { useScoutActivity } from "../hooks/useScoutActivity";
@@ -86,14 +87,33 @@ export default function Page() {
         const err = (await res.json().catch(() => ({}))) as {
           error?: string;
         };
-        console.error(`/api/scout ${res.status}: ${err.error ?? "(no detail)"}`);
+        const detail = err.error ?? `HTTP ${res.status}`;
+        pushToast(`Couldn't run scout: ${detail}`, "error");
+        return;
       }
+      pushToast(`Scouting "${query}" — leads will appear shortly.`, "info");
     } catch (err) {
-      console.error("/api/scout fetch failed:", (err as Error).message);
+      pushToast(`Scout request failed: ${(err as Error).message}`, "error");
     } finally {
       setRunning(false);
     }
   }
+
+  // Surface the pipeline's terminal "Scout complete" broadcast as a
+  // success toast. We can't dedup by timestamp (ActivityEvent has none),
+  // so we dedup by object identity — each new broadcast creates a fresh
+  // event reference that pops to events[0].
+  const lastToastedEventRef = useRef<unknown>(null);
+  useEffect(() => {
+    if (events.length === 0) return;
+    const latest = events[0];
+    if (!latest) return;
+    if (lastToastedEventRef.current === latest) return;
+    if (latest.kind === "ok" && latest.text.startsWith("Scout complete")) {
+      lastToastedEventRef.current = latest;
+      pushToast(latest.text, "success");
+    }
+  }, [events]);
 
   const subtitle = loading
     ? "Loading leads..."
@@ -127,6 +147,7 @@ export default function Page() {
           <StatCards stats={liveStats} />
           <LeadTable
             leads={leads}
+            loading={loading}
             selectedId={selectedId}
             onSelect={setSelectedId}
           />
@@ -140,6 +161,7 @@ export default function Page() {
       ) : (
         <ActivityRail events={events} />
       )}
+      <ToastStack />
     </div>
   );
 }
