@@ -1,9 +1,30 @@
 import { createServiceRoleClient } from "@openclaw/db";
-import { draftPitch as runDraftPitch, computePayloadHash } from "@openclaw/agent/drafting";
+import {
+  draftPitch as runDraftPitch,
+  streamDraftPitch,
+  computePayloadHash,
+} from "@openclaw/agent/drafting";
 import type { DraftingLead, DraftingProfile } from "@openclaw/agent/drafting";
 import { handlers as mcpHandlers } from "@openclaw/agent/mcp-tools";
 
 import { inngest } from "../inngest";
+
+/**
+ * Draft a pitch in three checkpointed Inngest steps:
+ *
+ *   1. insert-empty-pitch     — row exists with placeholder hash so the UI
+ *                                can subscribe before any content arrives.
+ *   2. stream-and-finalize    — call streamDraftPitch(); flush partial body
+ *                                to pitches.draft via UPDATE so PitchCard's
+ *                                Realtime hook renders chunks live. On
+ *                                stream-unavailable, fall back to the
+ *                                non-streaming runDraftPitch.
+ *   3. notify-agent + insert-notification — fan-out to Telegram/Discord.
+ *
+ * Idempotency: pitch_id is generated upfront and persisted in step 1, so
+ * Inngest replays of step 2 always update the same row. The chunked
+ * UPDATEs are monotonically increasing — Realtime delivers the latest.
+ */
 
 export const draftPitch = inngest.createFunction(
   {
@@ -95,44 +116,91 @@ export const draftPitch = inngest.createFunction(
       return `${proof.summary}${tail}`;
     });
 
-    const output = await step.run("call-llm", () =>
-      runDraftPitch({
-        lead: draftingLead,
-        profile: draftingProfile,
-        userId: user_id,
-        ...(proofSummary !== null ? { proofSummary } : {}),
-      })
-    );
-
-    const inserted = await step.run("insert-pitch", async () => {
+    // ── Step 1: insert empty pitch row ────────────────────────────────────
+    const pitch_id = await step.run("insert-empty-pitch", async () => {
       const id = crypto.randomUUID();
-      const payload_hash = computePayloadHash({
+      const placeholderHash = computePayloadHash({
         id,
-        subject: output.subject,
-        draft: output.body,
+        subject: "",
+        draft: "",
       });
+      const { error } = await supabase.from("pitches").insert({
+        id,
+        lead_id,
+        user_id,
+        draft: "",
+        subject: "",
+        status: "draft",
+        payload_hash: placeholderHash,
+        expected_signal: { reasoning: "", confidence: "medium" },
+      });
+      if (error) {
+        throw new Error(`Failed to insert empty pitch: ${error.message}`);
+      }
+      return id;
+    });
 
-      const { error } = await supabase
-        .from("pitches")
-        .insert({
-          id,
-          lead_id,
-          user_id,
-          draft: output.body,
-          subject: output.subject,
-          status: "draft",
-          payload_hash,
-          expected_signal: {
-            reasoning: output.reasoning,
-            confidence: output.confidence,
+    // ── Step 2: stream + finalize ──────────────────────────────────────────
+    const finalized = await step.run("stream-and-finalize", async () => {
+      let result: { subject: string; body: string; reasoning: string; confidence: "high" | "medium" | "low" };
+      try {
+        result = await streamDraftPitch({
+          lead: draftingLead,
+          profile: draftingProfile,
+          userId: user_id,
+          ...(proofSummary !== null ? { proofSummary } : {}),
+          onPartialBody: async (partial) => {
+            const liveHash = computePayloadHash({
+              id: pitch_id,
+              subject: "",
+              draft: partial,
+            });
+            await supabase
+              .from("pitches")
+              .update({ draft: partial, payload_hash: liveHash })
+              .eq("id", pitch_id);
           },
         });
-
-      if (error) {
-        throw new Error(`Failed to insert pitch: ${error.message}`);
+      } catch (streamErr) {
+        // Streaming unavailable / failed mid-flight — fall back to the
+        // structured non-streaming path. UX degrades to current behavior.
+        console.warn(
+          "[draftPitch] stream failed, falling back to complete():",
+          (streamErr as Error).message
+        );
+        result = await runDraftPitch({
+          lead: draftingLead,
+          profile: draftingProfile,
+          userId: user_id,
+          ...(proofSummary !== null ? { proofSummary } : {}),
+        });
       }
 
-      return { pitch_id: id, payload_hash };
+      const finalHash = computePayloadHash({
+        id: pitch_id,
+        subject: result.subject,
+        draft: result.body,
+      });
+      const { error: updErr } = await supabase
+        .from("pitches")
+        .update({
+          subject: result.subject,
+          draft: result.body,
+          payload_hash: finalHash,
+          expected_signal: {
+            reasoning: result.reasoning,
+            confidence: result.confidence,
+          },
+        })
+        .eq("id", pitch_id);
+      if (updErr) {
+        throw new Error(`Failed to finalize pitch: ${updErr.message}`);
+      }
+      return {
+        subject: result.subject,
+        body: result.body,
+        payload_hash: finalHash,
+      };
     });
 
     await step.run("notify-agent", async () => {
@@ -140,10 +208,10 @@ export const draftPitch = inngest.createFunction(
         user_id,
         kind: "pitch_drafted",
         payload: {
-          pitch_id: inserted.pitch_id,
-          payload_hash: inserted.payload_hash,
-          subject: output.subject,
-          body: output.body,
+          pitch_id,
+          payload_hash: finalized.payload_hash,
+          subject: finalized.subject,
+          body: finalized.body,
         },
       });
     });
@@ -153,13 +221,13 @@ export const draftPitch = inngest.createFunction(
         user_id,
         kind: "pitch_drafted",
         title: "Pitch ready for review",
-        body: output.subject,
+        body: finalized.subject,
         resource_type: "pitches",
-        resource_id: inserted.pitch_id,
+        resource_id: pitch_id,
         href: `/?lead=${lead_id}`,
       });
     });
 
-    return { pitch_id: inserted.pitch_id };
+    return { pitch_id };
   }
 );
