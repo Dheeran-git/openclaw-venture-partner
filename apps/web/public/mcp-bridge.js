@@ -27,7 +27,14 @@ if (!url) {
 
 const rl = readline.createInterface({ input: process.stdin, terminal: false });
 
-rl.on("line", async (line) => {
+let pending = 0;
+let stdinClosed = false;
+
+function maybeExit() {
+  if (stdinClosed && pending === 0) process.exit(0);
+}
+
+async function handleLine(line) {
   if (!line.trim()) return;
 
   let isNotification = false;
@@ -51,7 +58,6 @@ rl.on("line", async (line) => {
     });
 
     if (isNotification) {
-      // Drain the body so the connection releases, then drop it
       try {
         await res.text();
       } catch {}
@@ -76,8 +82,17 @@ rl.on("line", async (line) => {
       }) + "\n",
     );
   }
+}
+
+rl.on("line", (line) => {
+  pending++;
+  handleLine(line).finally(() => {
+    pending--;
+    maybeExit();
+  });
 });
 
 rl.on("close", () => {
-  process.exit(0);
+  stdinClosed = true;
+  maybeExit();
 });
