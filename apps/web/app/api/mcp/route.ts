@@ -92,6 +92,27 @@ export async function POST(req: Request) {
 
   const { method, params, id } = body;
 
+  // MCP handshake. Client sends `initialize` first; we declare our protocol
+  // version, capabilities, and server identity. This is required before any
+  // tool calls — without it the Gateway waits 30s and times out.
+  if (method === "initialize") {
+    return rpcResult(id, {
+      protocolVersion: "2024-11-05",
+      capabilities: { tools: {} },
+      serverInfo: {
+        name: "openclaw-vp",
+        version: "1.0.0",
+      },
+    });
+  }
+
+  // Notifications (no `id` field, fire-and-forget). Includes
+  // `notifications/initialized` which the client sends after a successful
+  // initialize. Respond with 204 No Content; the bridge will discard it.
+  if (method.startsWith("notifications/")) {
+    return new Response(null, { status: 204 });
+  }
+
   if (method === "tools/list") {
     return rpcResult(id, { tools: toolManifests });
   }
