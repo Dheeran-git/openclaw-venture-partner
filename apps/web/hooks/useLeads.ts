@@ -29,8 +29,9 @@ import {
   toLeadRow,
   type LeadDBRow,
   type ScoreDBRow,
+  type PitchDBRow,
 } from "../lib/leadAdapters";
-import type { LeadRow } from "../lib/fixtures";
+import type { LeadRow, LeadStatus } from "../lib/fixtures";
 
 interface FetchedLead {
   id: string;
@@ -43,6 +44,21 @@ interface FetchedLead {
     reasoning: string | null;
     created_at: string;
   }>;
+  pitches: Array<{
+    status: "draft" | "approved" | "sent" | "rejected";
+    created_at: string;
+  }>;
+}
+
+function pickLatestPitch(
+  pitches: FetchedLead["pitches"]
+): PitchDBRow | null {
+  if (pitches.length === 0) return null;
+  let best = pitches[0]!;
+  for (const p of pitches) {
+    if (p.created_at > best.created_at) best = p;
+  }
+  return { status: best.status };
 }
 
 const INITIAL_LIMIT = 50;
@@ -90,7 +106,9 @@ export function useLeads(userId?: string): UseLeadsResult {
       const { data, error } = await supabase
         .from("leads")
         .select(
-          `id, user_id, layer, normalized, scraped_at, scores (score, reasoning, created_at)`
+          `id, user_id, layer, normalized, scraped_at,
+           scores (score, reasoning, created_at),
+           pitches (status, created_at)`
         )
         .order("scraped_at", { ascending: false })
         .limit(INITIAL_LIMIT);
@@ -106,6 +124,7 @@ export function useLeads(userId?: string): UseLeadsResult {
       const initial = rows
         .map((row) => {
           const latest = pickLatestScore(row.scores);
+          const latestPitch = pickLatestPitch(row.pitches);
           const dbRow: LeadDBRow = {
             id: row.id,
             user_id: row.user_id,
@@ -121,7 +140,7 @@ export function useLeads(userId?: string): UseLeadsResult {
                 created_at: latest.created_at,
               }
             : null;
-          return toLeadRow(dbRow, scoreRow);
+          return toLeadRow(dbRow, scoreRow, latestPitch);
         })
         .sort(compareForList);
 
@@ -184,6 +203,41 @@ export function useLeads(userId?: string): UseLeadsResult {
                 score: row.score,
                 status: "draft-ready",
               };
+              return updated.sort(compareForList);
+            });
+          }
+        )
+        // Pitch status changes (Approve / Reject / mark Sent) need to flow
+        // back to the table row so the badge matches the right rail.
+        // INSERT covers a brand-new draft pitch landing; UPDATE covers
+        // status transitions on an existing pitch row.
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "pitches",
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload) => {
+            const row = payload.new as {
+              lead_id: string;
+              status: "draft" | "approved" | "sent" | "rejected";
+            };
+            if (!row?.lead_id) return;
+            const nextStatus: LeadStatus =
+              row.status === "rejected"
+                ? "rejected"
+                : row.status === "sent"
+                  ? "sent"
+                  : row.status === "approved"
+                    ? "approved"
+                    : "draft-ready";
+            setLeads((prev) => {
+              const idx = prev.findIndex((l) => l.id === row.lead_id);
+              if (idx < 0) return prev;
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx]!, status: nextStatus };
               return updated.sort(compareForList);
             });
           }

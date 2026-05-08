@@ -22,11 +22,35 @@ export interface ScoreDBRow {
   created_at: string;
 }
 
+export interface PitchDBRow {
+  status: "draft" | "approved" | "sent" | "rejected";
+}
+
+/**
+ * Compute the lead row's pipeline status. Pitch state, when present,
+ * dominates the score-only signal: a rejected pitch outranks the fact
+ * that the lead has a score, and a sent pitch outranks "draft-ready".
+ * This keeps the table in sync with the right-rail PitchCard.
+ */
+function statusFor(
+  score: ScoreDBRow | null,
+  pitch: PitchDBRow | null
+): LeadStatus {
+  if (pitch) {
+    if (pitch.status === "rejected") return "rejected";
+    if (pitch.status === "sent") return "sent";
+    if (pitch.status === "approved") return "approved";
+    // draft -> falls through to "draft-ready" since the lead has a
+    // pitch in flight; further differentiation lives in the right rail.
+  }
+  return score === null ? "scouting" : "draft-ready";
+}
+
 export function toLeadRow(
   lead: LeadDBRow,
-  score: ScoreDBRow | null
+  score: ScoreDBRow | null,
+  pitch: PitchDBRow | null = null
 ): LeadRow {
-  const status: LeadStatus = score === null ? "scouting" : "draft-ready";
   return {
     id: lead.id,
     score: score?.score ?? null,
@@ -39,7 +63,7 @@ export function toLeadRow(
     title: decodeHtmlEntities(lead.normalized.title),
     budget: lead.normalized.budget_text ?? "—",
     scraped_at: lead.scraped_at,
-    status,
+    status: statusFor(score, pitch),
   };
 }
 
