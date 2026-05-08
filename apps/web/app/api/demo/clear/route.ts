@@ -2,16 +2,17 @@ import { createServiceRoleClient } from "@openclaw/db";
 import { getSession } from "../../../../lib/supabaseServer";
 
 /**
- * Wipes the calling user's demo-seed lead (and via cascade, its pitch
- * and proof_artifact). Identified by the constant hash that
- * /api/demo/seed stamps onto the lead row, so this is a no-op when
- * the user hasn't seeded.
+ * Wipes every lead (and via cascade, every pitch + proof_artifact)
+ * that the calling user's most recent /api/demo/seed run created.
+ * Identified by the `demo-seed:` hash prefix the seed endpoint
+ * stamps on every row, so a multi-lead seed (hero + supporting cast)
+ * gets cleaned up in one shot.
  *
- * Idempotent and scoped to user_id — never touches another operator's
- * data. Returns the count of rows deleted so the caller can show a
- * sensible toast.
+ * Idempotent and scoped to user_id — never touches another
+ * operator's data. Returns the count of leads deleted so the caller
+ * can show a sensible toast.
  */
-const DEMO_LEAD_HASH = "demo-seed:nextjs-saas-rebuild";
+const DEMO_HASH_PREFIX = "demo-seed:";
 
 export async function POST() {
   const session = await getSession();
@@ -25,7 +26,7 @@ export async function POST() {
   const { data: prior } = await supabase
     .from("leads")
     .select("id")
-    .eq("hash", DEMO_LEAD_HASH)
+    .like("hash", `${DEMO_HASH_PREFIX}%`)
     .eq("user_id", userId);
 
   const ids = ((prior ?? []) as Array<{ id: string }>).map((r) => r.id);
