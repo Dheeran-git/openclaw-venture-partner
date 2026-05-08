@@ -27,10 +27,18 @@ export interface PitchDBRow {
 }
 
 /**
- * Compute the lead row's pipeline status. Pitch state, when present,
- * dominates the score-only signal: a rejected pitch outranks the fact
- * that the lead has a score, and a sent pitch outranks "draft-ready".
- * This keeps the table in sync with the right-rail PitchCard.
+ * Compute the lead row's pipeline status. Three-way split that keeps
+ * the table in sync with the right-rail PitchCard:
+ *
+ *   - "scouting"    -> no score row yet, scoring in flight or pending
+ *   - "scored"      -> score landed, but the operator hasn't drafted
+ *                       a pitch yet ("Draft pitch" CTA in the rail)
+ *   - "draft-ready" -> a pitch row in 'draft' status exists -- the
+ *                       draft is genuinely ready for the operator to
+ *                       review/approve/edit
+ *
+ * Terminal pitch states (rejected/sent/approved) outrank everything
+ * else so the row badge tells the truth even after a workflow action.
  */
 function statusFor(
   score: ScoreDBRow | null,
@@ -40,10 +48,10 @@ function statusFor(
     if (pitch.status === "rejected") return "rejected";
     if (pitch.status === "sent") return "sent";
     if (pitch.status === "approved") return "approved";
-    // draft -> falls through to "draft-ready" since the lead has a
-    // pitch in flight; further differentiation lives in the right rail.
+    if (pitch.status === "draft") return "draft-ready";
   }
-  return score === null ? "scouting" : "draft-ready";
+  if (score === null) return "scouting";
+  return "scored";
 }
 
 export function toLeadRow(

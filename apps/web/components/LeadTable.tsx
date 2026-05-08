@@ -297,6 +297,7 @@ const STATUS_MAP: Record<
   LeadStatus,
   { c: string; l: string; live?: boolean }
 > = {
+  scored: { c: "#3B82F6", l: "Scored" },
   "draft-ready": { c: "#10B981", l: "Draft ready" },
   drafting: { c: "#00E5CC", l: "Drafting", live: true },
   scouting: { c: "#00E5CC", l: "Scouting", live: true },

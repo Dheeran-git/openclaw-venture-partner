@@ -198,10 +198,14 @@ export function useLeads(userId?: string): UseLeadsResult {
               const idx = prev.findIndex((l) => l.id === row.lead_id);
               if (idx < 0) return prev; // score for an unknown lead -- ignore
               const updated = [...prev];
+              // A fresh score with no pitch yet is "scored", not
+              // "draft-ready" -- statusFor's three-way split. Once the
+              // operator drafts a pitch, the pitches subscription below
+              // promotes it to "draft-ready".
               updated[idx] = {
                 ...updated[idx]!,
                 score: row.score,
-                status: "draft-ready",
+                status: "scored",
               };
               return updated.sort(compareForList);
             });

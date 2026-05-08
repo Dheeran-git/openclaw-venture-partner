@@ -13,6 +13,7 @@ import type { LeadSource as SharedLeadSource } from "@openclaw/shared";
 export type LeadSource = SharedLeadSource;
 
 export type LeadStatus =
+  | "scored"
   | "draft-ready"
   | "drafting"
   | "scouting"
