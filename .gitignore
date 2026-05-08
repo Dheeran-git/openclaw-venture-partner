@@ -36,7 +36,6 @@ coverage/
 
 # Test artifacts
 .playwright-mcp/
-phase*.png
 
 # Claude Code local state (per-machine — scheduled tasks, local settings)
 .claude/
