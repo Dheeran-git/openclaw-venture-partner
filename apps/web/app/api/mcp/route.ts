@@ -28,12 +28,14 @@ function rpcResult(id: unknown, result: unknown): Response {
 // back at this same path; our POST handler does the actual JSON-RPC work.
 // The stream is kept alive with keepalive comments until Vercel's serverless
 // timeout closes it; the client reconnects automatically.
+//
+// Auth note: GET is intentionally unauthenticated. The handshake only tells
+// the client what URL to POST to — no data leaks here. Some MCP clients
+// (including OpenClaw's bundle-mcp loader) only attach Authorization on POST,
+// not on the SSE GET, so requiring auth here breaks the handshake. POST is
+// where every actual tool call happens, and POST is fully gated by
+// validateSecret() below.
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("Authorization");
-  if (!validateSecret(authHeader, "shared") && !validateSecret(authHeader, "worker")) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
   const url = new URL(req.url);
   const endpoint = url.pathname; // "/api/mcp"
   const encoder = new TextEncoder();
