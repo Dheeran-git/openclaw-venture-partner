@@ -155,14 +155,25 @@ export default function AgentPage() {
       <Sidebar {...userMeta} initialActive="agent" />
 
       <main className="oc-main">
+        {/* flex:1 + overflow-y:auto + min-height:0 makes the agent
+            page actually scrollable. Without it the long content
+            (status card + chat panel + 9 skills + 11 MCP tools +
+            ASCII diagram) overflows the viewport with no scroll. */}
         <div
           style={{
+            flex: 1,
+            overflowY: "auto",
+            minHeight: 0,
             padding: "32px 32px 48px",
-            maxWidth: 920,
-            margin: "0 auto",
-            width: "100%",
           }}
         >
+          <div
+            style={{
+              maxWidth: 920,
+              margin: "0 auto",
+              width: "100%",
+            }}
+          >
           <div style={{ marginBottom: 24 }}>
             <div className="eyebrow" style={{ marginBottom: 8 }}>
               Personal AI Substrate
@@ -223,6 +234,7 @@ export default function AgentPage() {
 
           <SectionHeader icon={Activity} title="Architecture at runtime" />
           <ArchDiagram isConnected={!!isConnected} />
+          </div>
         </div>
       </main>
     </div>
