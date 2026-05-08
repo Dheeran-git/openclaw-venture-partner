@@ -4,10 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import {
   Inbox,
-  Search,
   FileText,
   Users,
-  LayoutGrid,
   Settings,
   LogOut,
   Sparkles,
@@ -29,7 +27,6 @@ interface NavItem {
 function buildPrimary(inboxCount: number, pitchesCount: number): NavItem[] {
   return [
     { id: "inbox", icon: Inbox, label: "Inbox", count: inboxCount > 0 ? String(inboxCount) : undefined, href: "/" },
-    { id: "scout", icon: Search, label: "Scout", count: "running", live: true, future: true },
     { id: "pitches", icon: FileText, label: "Pitches", count: pitchesCount > 0 ? String(pitchesCount) : undefined, href: "/pitches" },
     { id: "clients", icon: Users, label: "Clients", href: "/clients" },
   ];
@@ -37,7 +34,6 @@ function buildPrimary(inboxCount: number, pitchesCount: number): NavItem[] {
 
 const TOOLS: NavItem[] = [
   { id: "agent", icon: Sparkles, label: "Agent", href: "/agent" },
-  { id: "templates", icon: LayoutGrid, label: "Templates", future: true },
   { id: "settings", icon: Settings, label: "Settings", href: "/settings/connect" },
 ];
 
