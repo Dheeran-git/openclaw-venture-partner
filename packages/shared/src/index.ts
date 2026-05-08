@@ -1,5 +1,6 @@
 export { env } from "./env";
 export {
+  decodeHtmlEntities,
   detectLeadSource,
   extractBudgetText,
   normalizeScrapedLead,

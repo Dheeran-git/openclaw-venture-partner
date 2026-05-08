@@ -3,6 +3,7 @@
 import { X, ExternalLink } from "lucide-react";
 import { useLeadDetail } from "../hooks/useLeadDetail";
 import { ageFromIso } from "../lib/leadAdapters";
+import { decodeHtmlEntities } from "@openclaw/shared";
 import { SOURCE_DOT, SOURCE_LABEL, type LeadSource } from "../lib/fixtures";
 import { PitchCard } from "./lead-detail/PitchCard";
 
@@ -47,7 +48,7 @@ export function LeadDetail({
                 lineHeight: 1.3,
               }}
             >
-              {normalized.title}
+              {decodeHtmlEntities(normalized.title)}
             </div>
             <div className="oc-meta oc-mono" style={{ marginTop: 2 }}>
               {detail.id.slice(0, 8)} · {normalized.budget_text ?? "—"} ·{" "}

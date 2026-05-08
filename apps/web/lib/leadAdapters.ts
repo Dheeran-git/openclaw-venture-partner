@@ -4,7 +4,7 @@
  * component can recompute the human label at render time and stay
  * accurate as time passes without forcing full state updates.
  */
-import type { NormalizedLead } from "@openclaw/shared";
+import { decodeHtmlEntities, type NormalizedLead } from "@openclaw/shared";
 import type { LeadRow, LeadStatus } from "./fixtures";
 
 export interface LeadDBRow {
@@ -32,7 +32,11 @@ export function toLeadRow(
     score: score?.score ?? null,
     layer: lead.layer,
     source: lead.normalized.source,
-    title: lead.normalized.title,
+    // Defensive render-time decode: leads scraped before the
+    // normalize-time decoder shipped (commit cbf43f5) still have
+    // raw entities like "&amp;" in their persisted title. Cheap to
+    // apply on every read; idempotent on already-decoded strings.
+    title: decodeHtmlEntities(lead.normalized.title),
     budget: lead.normalized.budget_text ?? "—",
     scraped_at: lead.scraped_at,
     status,
