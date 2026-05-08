@@ -264,10 +264,11 @@ export default function OnboardingPage() {
               </p>
 
               <div className="bg-bg-card border border-border-subtle rounded-md p-4 mb-6">
-                <p className="font-mono text-12 text-fg-secondary uppercase tracking-wide mb-2">Available in Phase 3</p>
+                <p className="font-mono text-12 text-fg-secondary uppercase tracking-wide mb-2">Optional · Set up anytime</p>
                 <p className="text-14 text-fg-secondary">
-                  Chat platform binding (Telegram &amp; Discord) is coming in the next phase.
-                  You can approve pitches from the web dashboard in the meantime.
+                  You can pair Telegram or Discord later from{" "}
+                  <span className="font-mono text-fg-primary">Settings → Connect</span>. Until then,
+                  every lead, draft pitch, and reply lands in the web dashboard for you to review and approve.
                 </p>
               </div>
 
