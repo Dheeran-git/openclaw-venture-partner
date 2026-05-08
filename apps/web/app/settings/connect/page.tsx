@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, RefreshCw, Zap, Send, MessageSquare } from "lucide-react";
+import { Copy, Check, RefreshCw, Zap, Send, MessageSquare, Trash2 } from "lucide-react";
 import { Sidebar } from "../../../components/Sidebar";
 import { useSession } from "../../../lib/auth";
 
@@ -43,6 +43,8 @@ export default function ConnectPage() {
   const [loading, setLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [seedError, setSeedError] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [clearMsg, setClearMsg] = useState<string | null>(null);
 
   // Tracks the platform the currently-displayed code was generated for.
   // Used so we don't accept a stale response when the user has already
@@ -106,6 +108,7 @@ export default function ConnectPage() {
 
   async function handleSeedDemo() {
     setSeedError(null);
+    setClearMsg(null);
     setSeeding(true);
     try {
       const res = await fetch("/api/demo/seed", { method: "POST" });
@@ -122,6 +125,35 @@ export default function ConnectPage() {
       setSeedError((err as Error).message);
     } finally {
       setSeeding(false);
+    }
+  }
+
+  async function handleClearDemo() {
+    setSeedError(null);
+    setClearMsg(null);
+    setClearing(true);
+    try {
+      const res = await fetch("/api/demo/clear", { method: "POST" });
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        cleared?: number;
+      };
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error ?? "Clear failed");
+      }
+      setClearMsg(
+        (json.cleared ?? 0) > 0
+          ? "Demo data cleared."
+          : "No demo data to clear."
+      );
+      // Bounce them home so the inbox refreshes without the seeded row.
+      // Small delay so they actually see the toast before navigation.
+      setTimeout(() => router.push("/" as never), 800);
+    } catch (err) {
+      setSeedError((err as Error).message);
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -407,22 +439,52 @@ export default function ConnectPage() {
                   }}
                 >
                   Seed a high-quality lead, score, drafted pitch, and Lighthouse
-                  audit for a guaranteed-working live demo. Replaces any prior seed.
+                  audit for a guaranteed-working live demo. Replaces any prior
+                  seed. <strong style={{ color: "var(--fg-primary)" }}>Clear</strong> wipes the demo lead so it doesn&apos;t
+                  mix with your real inbox.
                 </p>
-                <button
-                  className="oc-btn oc-btn-secondary"
-                  onClick={handleSeedDemo}
-                  disabled={seeding}
-                  style={{ width: "100%", justifyContent: "center" }}
-                >
-                  <Zap size={13} strokeWidth={1.5} />
-                  {seeding ? "Seeding..." : "Seed demo data"}
-                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    className="oc-btn oc-btn-secondary"
+                    onClick={handleSeedDemo}
+                    disabled={seeding || clearing}
+                    style={{ flex: 1, justifyContent: "center" }}
+                  >
+                    <Zap size={13} strokeWidth={1.5} />
+                    {seeding ? "Seeding..." : "Seed demo data"}
+                  </button>
+                  <button
+                    className="oc-btn oc-btn-ghost"
+                    onClick={handleClearDemo}
+                    disabled={clearing || seeding}
+                    title="Remove the demo lead, pitch, and proof so it doesn't mix with real leads."
+                    aria-label="Clear demo data"
+                    style={{
+                      paddingLeft: 14,
+                      paddingRight: 14,
+                      color: "var(--fg-secondary)",
+                    }}
+                  >
+                    <Trash2 size={13} strokeWidth={1.5} />
+                    {clearing ? "Clearing..." : "Clear"}
+                  </button>
+                </div>
                 {seedError && (
                   <div
                     style={{ color: "#EF4444", fontSize: 12, marginTop: 8 }}
                   >
                     {seedError}
+                  </div>
+                )}
+                {clearMsg && !seedError && (
+                  <div
+                    style={{
+                      color: "var(--fg-secondary)",
+                      fontSize: 12,
+                      marginTop: 8,
+                    }}
+                  >
+                    {clearMsg}
                   </div>
                 )}
               </div>
