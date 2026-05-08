@@ -47,13 +47,8 @@ export function LeadTable({
   return (
     <div className="oc-table">
       <div className="oc-thead">
-        <div>
-          <input
-            type="checkbox"
-            className="oc-cb-input"
-            aria-label="Select all"
-          />
-        </div>
+        {/* Checkbox column removed — bulk selection was never wired to
+            any actual bulk action, so the checkboxes were decoration. */}
         <SortHeader
           col="score"
           label="Score"
@@ -89,13 +84,6 @@ export function LeadTable({
             className={`oc-tr ${selectedId === lead.id ? "selected" : ""}`}
             onClick={() => onSelect(lead.id)}
           >
-            <span onClick={(e) => e.stopPropagation()}>
-              <input
-                type="checkbox"
-                className="oc-cb-input"
-                aria-label={`Select ${lead.id}`}
-              />
-            </span>
             <span>
               <ScoreBadge score={lead.score} />
             </span>

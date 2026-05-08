@@ -35,54 +35,57 @@ describe("LLM router — provider selection", () => {
     await expect(pickProvider()).rejects.toThrow(/no healthy LLM provider/);
   });
 
-  it("returns Copilot first when only Copilot is set (top of priority chain)", async () => {
-    process.env.COPILOT_TOKEN = "x";
-    const p = await pickProvider();
-    expect(p.name).toBe("copilot");
-  });
-
-  it("returns Gemini when only Gemini is set", async () => {
+  it("returns Gemini first when only Gemini is set (top of new priority chain)", async () => {
     process.env.GEMINI_API_KEY = "x";
     const p = await pickProvider();
     expect(p.name).toBe("gemini");
   });
 
-  it("falls through to OpenRouter when Copilot/Gemini/Groq absent", async () => {
+  // Groq has a remote healthCheck() so a unit test would always fail it.
+  // Coverage of "second-in-order falls through" is captured by the
+  // OpenRouter-only test below, which has no healthCheck.
+
+  it("falls through to OpenRouter when Gemini/Groq absent", async () => {
     process.env.OPENROUTER_API_KEY = "x";
     const p = await pickProvider();
     expect(p.name).toBe("openrouter");
   });
 
-  it("Anthropic is dormant — returns it only when explicitly the only configured provider", async () => {
+  it("ignores Copilot env even when set — Copilot is dropped from the active order", async () => {
+    process.env.COPILOT_TOKEN = "x";
+    await expect(pickProvider()).rejects.toThrow(/no healthy LLM provider/);
+  });
+
+  it("ignores Anthropic env even when set — Anthropic is dropped from the active order", async () => {
     process.env.ANTHROPIC_API_KEY = "x";
-    const p = await pickProvider();
-    expect(p.name).toBe("anthropic");
+    await expect(pickProvider()).rejects.toThrow(/no healthy LLM provider/);
   });
 
-  it("respects PROVIDER_ORDER (Copilot beats every other when all are set)", async () => {
-    for (const k of ENV_KEYS) process.env[k] = "x";
-    const p = await pickProvider();
-    expect(p.name).toBe("copilot");
-  });
-
-  it("preferred=gemini returns gemini when configured", async () => {
+  it("respects PROVIDER_ORDER (Gemini beats OpenRouter when both are set)", async () => {
     process.env.GEMINI_API_KEY = "x";
-    process.env.COPILOT_TOKEN = "x"; // would normally win
-    const p = await pickProvider("gemini");
+    process.env.OPENROUTER_API_KEY = "x";
+    const p = await pickProvider();
     expect(p.name).toBe("gemini");
   });
 
-  it("preferred=gemini throws when gemini is unconfigured", async () => {
-    process.env.COPILOT_TOKEN = "x";
-    await expect(pickProvider("gemini")).rejects.toThrow(/not healthy or not configured/);
+  it("preferred=openrouter returns openrouter when configured", async () => {
+    process.env.GEMINI_API_KEY = "x";
+    process.env.OPENROUTER_API_KEY = "x"; // gemini would normally win
+    const p = await pickProvider("openrouter");
+    expect(p.name).toBe("openrouter");
+  });
+
+  it("preferred=openrouter throws when openrouter is unconfigured", async () => {
+    process.env.GEMINI_API_KEY = "x";
+    await expect(pickProvider("openrouter")).rejects.toThrow(/not healthy or not configured/);
   });
 
   it("preferred=unknown throws", async () => {
-    process.env.COPILOT_TOKEN = "x";
+    process.env.GEMINI_API_KEY = "x";
     await expect(pickProvider("nonexistent" as never)).rejects.toThrow(/unknown provider/);
   });
 
-  it("PROVIDER_NAMES enumerates exactly the 5 known providers", () => {
+  it("PROVIDER_NAMES still enumerates the historical 5 strings (type compatibility)", () => {
     expect(PROVIDER_NAMES).toEqual(["copilot", "gemini", "groq", "openrouter", "anthropic"]);
   });
 });
@@ -110,10 +113,10 @@ describe("LLM router — streaming-capable selection", () => {
     await expect(pickStreamingProvider()).rejects.toThrow(/streaming-capable/);
   });
 
-  it("skips Copilot/Gemini (no .stream) and returns the first streaming provider", async () => {
-    // Only Copilot set — Copilot does not implement stream(), so this should
+  it("skips Gemini (no .stream) and falls through to a streaming provider", async () => {
+    // Only Gemini set — Gemini does not implement stream(), so this should
     // throw rather than return a non-streaming provider.
-    process.env.COPILOT_TOKEN = "x";
+    process.env.GEMINI_API_KEY = "x";
     await expect(pickStreamingProvider()).rejects.toThrow(/streaming-capable/);
   });
 
@@ -126,8 +129,8 @@ describe("LLM router — streaming-capable selection", () => {
     expect(p.stream).toBeDefined();
   });
 
-  it("preferred=copilot for streaming throws because Copilot has no stream()", async () => {
+  it("preferred=copilot for streaming throws since Copilot is no longer in the active order", async () => {
     process.env.COPILOT_TOKEN = "x";
-    await expect(pickStreamingProvider("copilot")).rejects.toThrow(/does not support streaming/);
+    await expect(pickStreamingProvider("copilot")).rejects.toThrow(/unknown provider|streaming-capable/);
   });
 });

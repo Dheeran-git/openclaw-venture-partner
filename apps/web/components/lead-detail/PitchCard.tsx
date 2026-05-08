@@ -196,7 +196,16 @@ export function PitchCard({ leadId }: PitchCardProps) {
   if (!pitch) return null;
 
   const statusStyle = STATUS_STYLE[pitch.status];
-  const isFinal = pitch.status === "sent" || pitch.status === "rejected";
+  // "approved" is a committed state too — the operator has already
+  // clicked Approve & send and either the email is queued or already
+  // sent. Showing the Approve/Edit/Reject row again would be confusing
+  // (user just took the action) and let them double-approve. Treat as
+  // final for action-row visibility; status banner below still shows
+  // the live state (Approved / Sent / Rejected).
+  const isFinal =
+    pitch.status === "sent" ||
+    pitch.status === "rejected" ||
+    pitch.status === "approved";
   const reasoning =
     typeof pitch.expected_signal?.reasoning === "string"
       ? pitch.expected_signal.reasoning
@@ -428,6 +437,10 @@ export function PitchCard({ leadId }: PitchCardProps) {
           {pitch.status === "sent" ? (
             <>
               <Check size={14} strokeWidth={2} /> Pitch sent.
+            </>
+          ) : pitch.status === "approved" ? (
+            <>
+              <Check size={14} strokeWidth={2} /> Pitch approved — sending shortly.
             </>
           ) : (
             <>

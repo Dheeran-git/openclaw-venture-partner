@@ -1,23 +1,24 @@
-import { copilotProvider } from "./providers/copilot";
 import { geminiProvider } from "./providers/gemini";
 import { groqProvider } from "./providers/groq";
 import { openrouterProvider } from "./providers/openrouter";
-import { anthropicProvider } from "./providers/anthropic";
 import { LLMError, type ProviderAdapter, type ProviderName } from "./types";
 
 /**
- * Provider order is locked per PRODUCTION_BUILD_GUIDE.md §4:
- *   Copilot -> Gemini -> Groq -> OpenRouter -> Anthropic (dormant)
+ * Provider order: Gemini -> Groq -> OpenRouter.
+ *
+ * Copilot was dropped (token issuance was operationally fragile) and
+ * Anthropic was dropped (kept dormant in earlier phases as a paid
+ * fallback we never wanted to actually invoke). Production runs on
+ * the three free-tier providers, with the router falling through
+ * cheapest-first and trying the next one on failure.
  *
  * Configuration check (`isConfigured`) is synchronous and cheap. Remote
  * health-check results are cached for 60s — see HEALTH_TTL_MS.
  */
 const PROVIDER_ORDER: ProviderAdapter[] = [
-  copilotProvider,
   geminiProvider,
   groqProvider,
   openrouterProvider,
-  anthropicProvider,
 ];
 
 const HEALTH_TTL_MS = 60_000;
