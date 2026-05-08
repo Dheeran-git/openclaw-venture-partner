@@ -111,7 +111,11 @@ export default function PitchesPage() {
     : undefined;
 
   return (
-    <div className="oc-app">
+    // Override the default 3-col grid (sidebar + main + 320px rail) — the
+    // pitches page has no right rail, so reclaim that column for the list
+    // and let oc-content's overflow:auto handle scrolling once the count
+    // outgrows the viewport.
+    <div className="oc-app" style={{ gridTemplateColumns: "256px 1fr" }}>
       <Sidebar
         {...userMeta}
         inboxCount={leadsQueued}

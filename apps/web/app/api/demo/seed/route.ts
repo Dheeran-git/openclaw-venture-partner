@@ -4,20 +4,27 @@ import { handlers as mcpHandlers } from "@openclaw/agent/mcp-tools";
 import { getSession } from "../../../../lib/supabaseServer";
 
 /**
- * Demo-mode parachute (BACKLOG A9 + multi-lead expansion). Seeds a varied,
- * deterministic set of leads + scores + (where appropriate) pitches +
- * proof artifacts so the inbox tells a complete story during a live
- * demo: an immediate-pitch hero with proof attached, an in-flight
- * sent pitch, an approved pitch waiting to land, mid-tier scored leads
- * still pending the operator's judgment, and a couple of auto-filter
- * rejects to show the score band working.
+ * Demo-mode parachute. Seeds a deterministic, opinionated dataset that
+ * walks a viewer through every meaningful state of the OpenClaw pipeline
+ * in a single dashboard load:
  *
- * Idempotent: replaces any prior seed for the same user. Identifies
- * its rows by the constant prefix `demo-seed:` on lead.hash, so the
+ *   - Inbox: 10 scored leads spread across the score bands so the
+ *            color tiers and signal pills speak for themselves.
+ *   - Pitches: a draft hero (with full Lighthouse proof attached), an
+ *              approved pitch, and a sent pitch that's already received
+ *              a positive client reply.
+ *   - Clients: an active conversation auto-created from the positive
+ *              reply, plus a historical client to show the memory log.
+ *   - Email replies: one classified-positive reply with three drafted
+ *                    response options the operator can pick from.
+ *
+ * Idempotent: replaces any prior demo seed for the same user. Identifies
+ * its rows by the constant prefix `demo-seed:` on lead.hash and the
+ * `@demo.openclaw.dev` email domain on clients/replies, so the
  * companion /api/demo/clear endpoint can wipe everything in one shot.
  */
 const DEMO_HASH_PREFIX = "demo-seed:";
-const HERO_LEAD_HASH = `${DEMO_HASH_PREFIX}nextjs-saas-rebuild`;
+const DEMO_EMAIL_DOMAIN = "demo.openclaw.dev";
 const DEMO_TARGET_URL = "https://demo.openclaw.dev";
 
 type Source = "upwork" | "linkedin" | "indeed" | "contra" | "reddit";
@@ -30,7 +37,6 @@ interface SeedLead {
   title: string;
   description: string;
   budget_text: string | null;
-  // ISO posted_at offset in days ago.
   posted_days_ago: number;
   score: number;
   reasoning: string;
@@ -56,7 +62,7 @@ For your rebuild I'd start with a query-pattern audit before touching the UI —
 Are you available for a 20-minute call this week to align on approach?`;
 
 const SEED_LEADS: SeedLead[] = [
-  // ── HERO: 95, immediate-pitch, with full Lighthouse proof attached ──
+  // 1 ── HERO 96, immediate-pitch, Lighthouse proof attached ───────────────
   {
     hashSuffix: "nextjs-saas-rebuild",
     source: "upwork",
@@ -66,7 +72,7 @@ const SEED_LEADS: SeedLead[] = [
       "We're rebuilding our analytics dashboard. Stack: Next.js 14 App Router, TypeScript, Tailwind, Supabase. ~3 weeks, fixed price $6,200. Need someone who has shipped a real dashboard before — please share one example. Performance is the main concern (current LCP ~4s).",
     budget_text: "$6,200 fixed",
     posted_days_ago: 2,
-    score: 95,
+    score: 96,
     reasoning:
       "Bullseye stack match (Next.js 14 + TS + Tailwind + Supabase) for an operator who specializes in exactly that. Budget $6,200 is comfortably above effective rate for a 3-week project. Posted 2 days ago. Specific deliverable, clear timeline, asks for a portfolio. Performance concern stated explicitly — perfect proof-of-value opportunity. No red flags — immediate-pitch tier.",
     signals: [
@@ -87,7 +93,44 @@ const SEED_LEADS: SeedLead[] = [
     },
   },
 
-  // ── 88, APPROVED pitch (waiting to send) ──
+  // 2 ── 92, draft pitch, fintech onboarding ──────────────────────────────
+  {
+    hashSuffix: "fintech-onboarding-flow",
+    source: "upwork",
+    source_url: "https://www.upwork.com/jobs/~demo-seed-fintech-onboarding",
+    title: "Tailwind + Next.js onboarding flow rebuild — fintech",
+    description:
+      "Series-B fintech, our 7-step onboarding has a 38% drop-off. Looking for a Next.js + Tailwind engineer to rebuild the flow with proper validation, progress persistence, and a unified design system. Budget $4,800 fixed for 2.5 weeks. Need before/after Hotjar comparable. SOC 2 means clean code matters.",
+    budget_text: "$4,800 fixed",
+    posted_days_ago: 1,
+    score: 92,
+    reasoning:
+      "Strong match: Next.js + Tailwind core stack, with a measurable conversion problem the operator can pitch a concrete win against. $4,800 over 2.5 weeks is comfortable. Series-B fintech signals real budget headroom for follow-on work. Posted yesterday.",
+    signals: [
+      "NEXT.JS",
+      "TAILWIND",
+      "FIXED $4.8K",
+      "FINTECH",
+      "2.5 WEEK",
+      "CONVERSION FOCUS",
+    ],
+    pitch: {
+      subject: "Onboarding rebuild — 38% drop-off → ~18% in 2.5 weeks",
+      body: `Hi — your post is exactly the shape of work I shipped last quarter. A B2B fintech we worked with had a 41% drop-off across a 6-step onboarding; rebuild took 2 weeks and brought it to 19%, holding steady three months later.
+
+The two biggest wins: (1) progress persistence so refresh/email-bounce doesn't restart, (2) inline validation that doesn't punish the user until they leave a field. Both are quick to ship and visible immediately in Hotjar.
+
+For your scope I'd plan: day 1-2 instrument and reproduce the drop-off step-by-step, days 3-9 rebuild the flow, days 10-13 polish and a SOC-2-friendly code review. Happy to send a redacted code walk-through.
+
+Want to hop on a 20-min call this week?`,
+      status: "draft",
+      confidence: "high",
+      reasoning:
+        "Good match on stack + measurable problem framing. Cited a closely comparable past win to anchor credibility. Closing ask is low-friction.",
+    },
+  },
+
+  // 3 ── 88, APPROVED pitch (waiting to send) ─────────────────────────────
   {
     hashSuffix: "perf-consultant-ecom",
     source: "contra",
@@ -118,11 +161,11 @@ Hourly is fine. Quick 20-min call this week to align scope?`,
       status: "approved",
       confidence: "high",
       reasoning:
-        "Approved by operator on 2026-05-08. Stack and proof-of-value angle are tight; client explicitly asked for a portfolio with measurable wins.",
+        "Approved by operator. Stack and proof-of-value angle are tight; client explicitly asked for a portfolio with measurable wins.",
     },
   },
 
-  // ── 86, SENT pitch (the one we already mailed) ──
+  // 4 ── 86, SENT pitch (has client + email reply) ────────────────────────
   {
     hashSuffix: "fullstack-b2b-dashboard",
     source: "upwork",
@@ -156,7 +199,79 @@ Available to start in the next 7 days. Want to set up a call?`,
     },
   },
 
-  // ── 76, scored only — operator-judgment case ──
+  // 5 ── 84, draft pitch, headless CMS migration ──────────────────────────
+  {
+    hashSuffix: "sanity-cms-migration",
+    source: "linkedin",
+    source_url: "https://www.linkedin.com/jobs/view/demo-seed-sanity",
+    title: "Headless CMS migration — Wordpress → Next.js + Sanity",
+    description:
+      "Mid-stage SaaS, ~80 marketing pages currently on a custom Wordpress theme. Migrating to a Next.js storefront with Sanity as the editorial layer. Budget $7,500 fixed for 3 weeks. Editorial team needs a clean composable studio. SEO must not regress.",
+    budget_text: "$7,500 fixed",
+    posted_days_ago: 2,
+    score: 84,
+    reasoning:
+      "Next.js core stack matches the operator. Sanity is adjacent — operator hasn't shipped Sanity specifically but the migration shape is well-known. Budget $7,500 over 3 weeks is comfortable. Strong, will-pitch tier with a soft mismatch on Sanity that's worth flagging in the pitch.",
+    signals: [
+      "NEXT.JS",
+      "SANITY",
+      "CMS MIGRATION",
+      "FIXED $7.5K",
+      "3 WEEK SCOPE",
+      "SEO CARE",
+    ],
+    pitch: {
+      subject: "WP → Next.js + Sanity migration — clean studio, SEO held",
+      body: `Hi — Wordpress-to-headless migrations are most of what I shipped Q1. Last one was a 110-page editorial site that moved from a custom WP theme to Next.js + a composable headless CMS in 3.5 weeks, with zero SEO regression (we ran a full sitemap diff + 301 audit pre-cutover).
+
+I haven't shipped Sanity specifically — closest experience is Contentful with similar editorial shape — but Sanity Studio is a quick onboard and I can have a working instance to show you within 48 hours of a green light.
+
+Plan for your scope: week 1 Studio + content model + first 10 pages, week 2 the bulk migration with redirect plan, week 3 polish + a 30-page editorial dry-run with your team. Happy to chat?`,
+      status: "draft",
+      confidence: "medium",
+      reasoning:
+        "Honest about the Sanity gap rather than glossing over it; operator's WP→headless track record carries. Soft confidence reflects the stack mismatch.",
+    },
+  },
+
+  // 6 ── 80, draft pitch, real-time data viz ──────────────────────────────
+  {
+    hashSuffix: "realtime-supabase-viz",
+    source: "upwork",
+    source_url: "https://www.upwork.com/jobs/~demo-seed-realtime-viz",
+    title: "Real-time data viz dashboard — Next.js + Supabase Realtime",
+    description:
+      "Logistics startup, need a real-time fleet-tracking dashboard. Next.js, Supabase (Postgres + Realtime), Tailwind. ~10 active vehicles to start, scaling to 200. Map-based UI with status pills + filters. Fixed $5,200 for 2 weeks.",
+    budget_text: "$5,200 fixed",
+    posted_days_ago: 3,
+    score: 80,
+    reasoning:
+      "Next.js + Supabase + Tailwind = full operator-stack match. Real-time UI is a slight specialty stretch but Supabase Realtime is straightforward. $5,200 over 2 weeks is right in the band. Strong tier.",
+    signals: [
+      "NEXT.JS",
+      "SUPABASE REALTIME",
+      "FIXED $5.2K",
+      "2 WEEK",
+      "MAP UI",
+      "LOGISTICS",
+    ],
+    pitch: {
+      subject: "Real-time fleet dashboard — Supabase Realtime, 2-week plan",
+      body: `Hi — Supabase Realtime + Next.js is exactly the stack I work in daily. Last month I shipped a near-identical real-time UI for a marketplace ops team: ~30 simultaneous channels, sub-200ms update latency, no flicker on rapid bursts.
+
+For 10→200 vehicle scale you'll want to think about channel topology early: per-vehicle channels are simpler to reason about under 50, beyond that you'll want a single fleet broadcast filtered client-side. I can sketch both options in the kickoff call.
+
+Plan: week 1 schema + channel topology + map base UI, week 2 status pills + filters + load testing to your scale target.
+
+Available next week — set up a 20-min call?`,
+      status: "draft",
+      confidence: "high",
+      reasoning:
+        "Stack-perfect, with a concrete same-shape past project. Surfaced the scaling design decision proactively to demonstrate seniority.",
+    },
+  },
+
+  // 7 ── 76, scored only — operator-judgment territory ────────────────────
   {
     hashSuffix: "react-marketing-rebuild",
     source: "upwork",
@@ -179,7 +294,7 @@ Available to start in the next 7 days. Want to set up a call?`,
     ],
   },
 
-  // ── 71, scored only ──
+  // 8 ── 71, scored only ──────────────────────────────────────────────────
   {
     hashSuffix: "ts-startup-analytics",
     source: "linkedin",
@@ -195,7 +310,7 @@ Available to start in the next 7 days. Want to set up a call?`,
     signals: ["TYPESCRIPT", "NODE", "HOURLY $70-95", "VAGUE SCOPE", "5D OLD"],
   },
 
-  // ── 58, low-tier (probably-skip) ──
+  // 9 ── 38, auto-filter (off-stack) ──────────────────────────────────────
   {
     hashSuffix: "wordpress-elementor",
     source: "upwork",
@@ -205,13 +320,13 @@ Available to start in the next 7 days. Want to set up a call?`,
       "Need a WordPress/Elementor expert to build a landing page for our service. WordPress experience required. Budget $300 fixed for 3-5 days.",
     budget_text: "$300 fixed",
     posted_days_ago: 6,
-    score: 32,
+    score: 38,
     reasoning:
       "Wrong stack — WordPress / Elementor is not the operator's React frontend specialty. Budget $300 is well below the floor. Auto-filter tier.",
     signals: ["WORDPRESS", "ELEMENTOR", "BELOW FLOOR", "OFF STACK"],
   },
 
-  // ── 26, auto-filter (red flags) ──
+  // 10 ── 24, auto-filter (red flags) ─────────────────────────────────────
   {
     hashSuffix: "vague-developer-needed",
     source: "reddit",
@@ -221,7 +336,7 @@ Available to start in the next 7 days. Want to set up a call?`,
       "Looking for a developer to help with our project. Long-term opportunity. Will discuss budget and details after you send your portfolio. Trial task expected (unpaid).",
     budget_text: null,
     posted_days_ago: 9,
-    score: 26,
+    score: 24,
     reasoning:
       "No stack mentioned. No budget stated. Vague scope ('our project'). Unpaid trial task is a clear red flag. Posted 9 days ago — almost certainly stale or filled. Auto-filter tier.",
     signals: [
@@ -270,6 +385,90 @@ const HERO_PROOF_METADATA = {
 const HERO_PROOF_SUMMARY =
   "Lighthouse audit for https://demo.openclaw.dev. Performance 42, Accessibility 91, Best Practices 83, SEO 89. Biggest win: properly size images (high impact).";
 
+// Memory_md for the active client (the one with a positive reply on the
+// SENT pitch). Markdown so the right-rail MemoryRenderer formats it nicely.
+const ACTIVE_CLIENT_MEMORY = `## Acme Insights, Inc.
+
+**Stage:** Series A B2B SaaS
+**Found via:** Upwork — full-stack engineer for B2B dashboard
+**Budget:** $9,000 fixed, 5 weeks
+**Stack match:** Next.js 14 + Postgres + Tailwind (full match)
+
+### Conversation log
+
+- **Day 0** — Sent pitch citing my multi-tenant dashboard case study; closed with a 20-min call ask.
+- **Day 1** — Sarah (founder) replied positively: liked the staged plan, wants to chat Wednesday 2pm PT. Mentioned they're also considering an in-house hire so timeline matters.
+
+### Working notes
+
+- Their product hits ~40 tenants — RLS pattern from the past project applies cleanly.
+- Sarah's a non-technical founder — explanations should anchor in business outcomes, not framework names.
+- Wednesday call: lead with the 5-week timeline + a sketched week-1 schema deliverable.`;
+
+const HISTORICAL_CLIENT_MEMORY = `## Northwind Commerce
+
+**Stage:** Closed (delivered Q1 2026)
+**Engagement:** 4 weeks, $7,200 fixed
+**Outcome:** Conversion-rate-optimization rebuild. LCP from 3.4s → 1.6s; checkout drop-off 18% → 11%.
+
+### Highlights
+
+- Rebuilt the checkout flow on Next.js 14 from a stale Hydrogen v1 template.
+- Sold a follow-on perf retainer ($1,800/mo, ongoing) on the back of the post-launch report.
+- Founder (Marcus) is happy to be a reference; mentioned his network during the wrap-up call.
+
+### Notes for next outreach
+
+- Marcus said his sister-in-law runs ops at a series-B logistics firm and they'd been talking about a fleet dashboard. Worth a warm intro ping in 4-6 weeks once their internal RFP closes.
+- Retainer renews 2026-08-01 — schedule a check-in 2 weeks before.`;
+
+const POSITIVE_REPLY_BODY = `Hi —
+
+Thanks for reaching out. I really liked the case study and the week-by-week plan made it easy to picture how this would land. We're also considering an in-house hire, so timeline is on my mind.
+
+Could we hop on a call Wednesday at 2pm PT? Happy to walk you through our existing schema and the customer feedback that's driving this rebuild.
+
+Best,
+Sarah Chen
+Founder & CEO, Acme Insights`;
+
+const REPLY_DRAFT_OPTIONS = [
+  {
+    tone: "warm",
+    body: `Hi Sarah —
+
+Wednesday 2pm PT works on my end. I'll send a Google Meet link this evening. To make the time go far, would it be useful if I came prepped with a sketch of the week-1 schema based on the feedback you mentioned? Happy to keep it lightweight — 15 min walk-through, 30 min open discussion, room to course-correct.
+
+Looking forward to it.
+
+Best,
+Dheeran`,
+  },
+  {
+    tone: "concise",
+    body: `Hi Sarah —
+
+Wednesday 2pm PT works. I'll send a Meet link tonight. Would a sketched week-1 schema be useful to anchor the call? If yes, send over the customer feedback and I'll have a draft ready.
+
+Best,
+Dheeran`,
+  },
+  {
+    tone: "consultative",
+    body: `Hi Sarah —
+
+Wednesday 2pm PT confirmed; meeting link to follow. A few thoughts ahead of the call to keep us on the same page:
+
+1. The in-house vs. contract decision usually hinges on how quickly you need v1 in customer hands. If "before end of quarter" is on the table, I'd lean contract for the rebuild and hire for the steady-state team.
+2. The feedback driving this rebuild matters more than the framework choice. If you can send 2-3 representative quotes I'll come with a sketch of which ones the rebuild structurally addresses.
+
+See you Wednesday.
+
+Best,
+Dheeran`,
+  },
+];
+
 export async function POST() {
   const session = await getSession();
   if (!session) {
@@ -279,8 +478,16 @@ export async function POST() {
   const userId = session.user.id;
   const supabase = createServiceRoleClient();
 
-  // ── 1. Wipe any prior demo seed for this user (cascade-deletes
-  //       attached pitches + proof_artifacts via FK constraints) ──
+  // ── 1. Wipe any prior demo seed for this user.
+  //       Order matters: clients first (they don't auto-cascade), then
+  //       leads (which cascade into pitches, scores, proof_artifacts,
+  //       and email_replies via FK on delete cascade). ─────────────────
+  await supabase
+    .from("clients")
+    .delete()
+    .eq("user_id", userId)
+    .ilike("contact_email", `%@${DEMO_EMAIL_DOMAIN}`);
+
   const { data: priorLeads } = await supabase
     .from("leads")
     .select("id")
@@ -297,13 +504,18 @@ export async function POST() {
   let heroPitchId: string | null = null;
   let heroPayloadHash: string | null = null;
 
+  // For the "sent + replied" lead we need to remember the pitch id so
+  // we can attach an email_reply + auto-create a client from it.
+  let sentPitchId: string | null = null;
+  let sentLeadId: string | null = null;
+
   for (const spec of SEED_LEADS) {
     const isHero = spec.hashSuffix === "nextjs-saas-rebuild";
+    const isSent = spec.pitch?.status === "sent";
     const postedAt = new Date(
       Date.now() - spec.posted_days_ago * 24 * 60 * 60 * 1000
     ).toISOString();
 
-    // ── Insert lead ──
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
       .insert({
@@ -330,7 +542,6 @@ export async function POST() {
       );
     }
 
-    // ── Insert score ──
     await supabase.from("scores").insert({
       lead_id: lead.id,
       score: spec.score,
@@ -340,7 +551,6 @@ export async function POST() {
       model: "demo-seed",
     });
 
-    // ── Insert pitch (if spec includes one) ──
     if (spec.pitch) {
       const pitchId = crypto.randomUUID();
       const payloadHash = computePayloadHash({
@@ -350,8 +560,6 @@ export async function POST() {
       });
 
       const now = new Date().toISOString();
-      // Stamp transition timestamps so the audit columns reflect the
-      // demo state honestly (a sent pitch should have sent_at set).
       await supabase.from("pitches").insert({
         id: pitchId,
         lead_id: lead.id,
@@ -376,7 +584,6 @@ export async function POST() {
         heroPitchId = pitchId;
         heroPayloadHash = payloadHash;
 
-        // Hero gets the Lighthouse proof artifact attached.
         await supabase.from("proof_artifacts").insert({
           user_id: userId,
           pitch_id: pitchId,
@@ -388,10 +595,67 @@ export async function POST() {
           generated_at: new Date().toISOString(),
         });
       }
+
+      if (isSent) {
+        sentPitchId = pitchId;
+        sentLeadId = lead.id;
+      }
     }
   }
 
-  // ── Audit log: one row summarizing the seed ──
+  // ── 2. Active client from the sent pitch + positive reply ──────────
+  if (sentPitchId && sentLeadId) {
+    const { data: activeClient } = await supabase
+      .from("clients")
+      .insert({
+        user_id: userId,
+        company_name: "Acme Insights, Inc.",
+        contact_email: `sarah@acme-insights.${DEMO_EMAIL_DOMAIN}`,
+        source_lead_id: sentLeadId,
+        status: "active",
+        memory_md: ACTIVE_CLIENT_MEMORY,
+      })
+      .select("id")
+      .single();
+
+    if (activeClient) {
+      // Email reply tied to the sent pitch + this client. Status
+      // "drafted" so the operator's right-rail ReplyCard shows three
+      // options and the Approve & send action.
+      await supabase.from("email_replies").insert({
+        user_id: userId,
+        pitch_id: sentPitchId,
+        client_id: activeClient.id,
+        from_email: `sarah@acme-insights.${DEMO_EMAIL_DOMAIN}`,
+        subject: "Re: Series-A B2B dashboard — multi-tenant Next.js",
+        body_text: POSITIVE_REPLY_BODY,
+        body_html: null,
+        received_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        classification: "positive",
+        classification_confidence: "high",
+        classification_reasoning:
+          "Reply explicitly accepts the call ask, surfaces a real concern (in-house alternative + timeline), and offers a concrete next step. Strong positive signal.",
+        classification_suggested_action: "draft_reply",
+        drafted_subject: "Re: Series-A B2B dashboard — multi-tenant Next.js",
+        drafted_options: REPLY_DRAFT_OPTIONS as unknown as never,
+        drafted_reasoning:
+          "Three tones offered: warm (default; the client's reply was personable), concise (if the operator prefers a tight ack), and consultative (the strongest if the operator wants to position seniority pre-call).",
+        status: "drafted",
+      });
+    }
+  }
+
+  // ── 3. Historical client (closed deal, memory only) ─────────────────
+  await supabase.from("clients").insert({
+    user_id: userId,
+    company_name: "Northwind Commerce",
+    contact_email: `marcus@northwind.${DEMO_EMAIL_DOMAIN}`,
+    source_lead_id: null,
+    status: "active",
+    memory_md: HISTORICAL_CLIENT_MEMORY,
+  });
+
+  // ── 4. Audit log: one row summarizing the seed ──────────────────────
   if (heroLeadId) {
     await supabase.from("audit_log").insert({
       user_id: userId,
@@ -403,15 +667,12 @@ export async function POST() {
         seeded_count: SEED_LEADS.length,
         hero_lead_id: heroLeadId,
         hero_pitch_id: heroPitchId,
+        sent_pitch_id: sentPitchId,
       },
     });
   }
 
-  // ── Fan out the "pitch drafted" notification for ONLY the hero pitch.
-  //     Notifying for every seeded pitch would spam Telegram/Discord
-  //     during a demo; the operator wants one obvious incoming
-  //     notification they can react to live. Failures are logged but
-  //     don't fail the seed — chat platforms aren't always bound. ──
+  // ── 5. Fan out the "pitch drafted" notification for the hero only ──
   if (heroPitchId && heroPayloadHash) {
     try {
       await mcpHandlers.notifyAgent!({
@@ -422,7 +683,7 @@ export async function POST() {
           payload_hash: heroPayloadHash,
           subject: HERO_PITCH_SUBJECT,
           body: HERO_PITCH_BODY,
-          score: 95,
+          score: 96,
         },
       });
     } catch (err) {

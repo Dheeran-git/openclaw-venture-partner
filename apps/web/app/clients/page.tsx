@@ -70,7 +70,7 @@ export default function ClientsPage() {
     : undefined;
 
   return (
-    <div className="oc-app">
+    <div className="oc-app" style={{ gridTemplateColumns: "256px 1fr" }}>
       <Sidebar
         {...userMeta}
         inboxCount={leadsQueued}
