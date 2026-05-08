@@ -145,12 +145,26 @@ export default function Page() {
         />
         <div className="oc-content">
           <StatCards stats={liveStats} />
-          <LeadTable
-            leads={leads}
-            loading={loading}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-          />
+          {/* Belt-and-suspenders scroll: oc-content's overflow chain
+              should already handle long lists, but on shorter viewports
+              the StatCards push the table past the fold without engaging
+              scroll. Wrap the table in its own flex:1 + overflow:auto
+              container so the table body scrolls reliably while the
+              StatCards stay pinned at the top of the content area. */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              minHeight: 0,
+            }}
+          >
+            <LeadTable
+              leads={leads}
+              loading={loading}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
+          </div>
         </div>
       </main>
       {selectedId ? (

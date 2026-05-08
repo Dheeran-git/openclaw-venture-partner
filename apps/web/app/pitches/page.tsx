@@ -175,7 +175,20 @@ export default function PitchesPage() {
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Pinned-filter, scrolling-list pattern: filter chips stay at
+              the top, the card list itself scrolls when it outgrows the
+              viewport. flex:1 + overflow-y:auto + min-height:0 is the
+              canonical recipe inside a flex column. */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
             {filtered.map((p) => {
               const color = STATUS_COLOR[p.status];
               const excerpt = p.draft.length > 200 ? p.draft.slice(0, 200) + "…" : p.draft;
