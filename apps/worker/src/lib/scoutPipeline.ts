@@ -320,39 +320,69 @@ export async function runScoutPipeline(
       bio: profile.bio ?? "",
     };
 
-    const results = await runConcurrent(
+    type ScoreOutcome =
+      | { ok: true; row: ScoreLeadResult & { lead_id: string } }
+      | { ok: false; lead_id: string; error: string };
+
+    const outcomes = await runConcurrent<typeof toScore[number], ScoreOutcome>(
       toScore,
       SCORE_CONCURRENCY,
-      async (row) => {
-        const result = await scoreLead({
-          lead: {
-            source: row.normalized.source,
-            source_url: row.normalized.source_url,
-            title: row.normalized.title,
-            description: row.normalized.description,
-            budget_text: row.normalized.budget_text,
-            posted_at: row.normalized.posted_at,
-          },
-          profile: scoringProfile,
-          userId: input.user_id,
-        });
-        return { lead_id: row.id, ...result };
+      async (row): Promise<ScoreOutcome> => {
+        try {
+          const result = await scoreLead({
+            lead: {
+              source: row.normalized.source,
+              source_url: row.normalized.source_url,
+              title: row.normalized.title,
+              description: row.normalized.description,
+              budget_text: row.normalized.budget_text,
+              posted_at: row.normalized.posted_at,
+            },
+            profile: scoringProfile,
+            userId: input.user_id,
+          });
+          return { ok: true, row: { lead_id: row.id, ...result } };
+        } catch (err) {
+          // Per-lead failure (truncated LLM output, schema validation,
+          // provider 429, etc.) MUST NOT cascade into the whole step.
+          // Free-tier models occasionally return malformed JSON; one bad
+          // response shouldn't black-hole the entire scout run. Lead stays
+          // unscored and gets re-attempted on the next scout cycle.
+          const message = err instanceof Error ? err.message : String(err);
+          return { ok: false, lead_id: row.id, error: message };
+        }
       }
     );
+
+    const successes = outcomes.filter(
+      (o): o is Extract<ScoreOutcome, { ok: true }> => o.ok
+    );
+    const failures = outcomes.filter(
+      (o): o is Extract<ScoreOutcome, { ok: false }> => !o.ok
+    );
+    const results = successes.map((s) => s.row);
+
+    if (failures.length > 0) {
+      console.warn(
+        `[scout] ${failures.length}/${outcomes.length} leads failed scoring:`,
+        failures.map((f) => `${f.lead_id}: ${f.error.slice(0, 120)}`).join("; ")
+      );
+    }
 
     const max = results.reduce(
       (m, r) => (r.score > m ? r.score : m),
       0
     );
-    await publish(
-      "ok",
-      `Top score: ${max}`,
-      `${results.length} scored`
-    );
+    const summary =
+      failures.length > 0
+        ? `Top score: ${max} (${failures.length} skipped)`
+        : `Top score: ${max}`;
+    await publish("ok", summary, `${results.length} scored`);
 
     return {
       scored: results,
       skippedAlreadyScored: alreadyScored.size,
+      failedToScore: failures.length,
     };
   });
 

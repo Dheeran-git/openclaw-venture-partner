@@ -47,7 +47,11 @@ export async function scoreLead(opts: {
     prompt_version,
     schema: ScoreLeadOutput,
     model: meta.model,
-    max_tokens: 1024,
+    // 1024 was tight: free-tier models occasionally truncate the JSON mid-string
+    // even though the schema's reasoning cap is 800 chars. 2048 gives a safe
+    // headroom for the JSON envelope plus signals[] without meaningfully
+    // changing per-call cost on free tiers.
+    max_tokens: 2048,
   });
 
   return { ...result, tier: meta.model, prompt_version };
