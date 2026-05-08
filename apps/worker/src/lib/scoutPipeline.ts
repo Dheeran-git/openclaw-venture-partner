@@ -246,9 +246,64 @@ export async function runScoutPipeline(
     return { rows };
   });
 
-  // Short-circuit if nothing fresh -- still emit a terminal ok event
-  // so the activity rail has an end state.
-  if (phase2.rows.length === 0) {
+  // ============================================================
+  // PHASE 2.5: recover orphans -- this user's prior leads that never
+  // got a score (e.g. a previous scout run crashed mid-scoring after
+  // leads were inserted but before scores landed). Without this they
+  // would stay in "scouting" forever, since phase 2 dedupes future
+  // scout runs against payload_hash.
+  // ============================================================
+  const ORPHAN_LIMIT = 50;
+  const recoveredOrphans: InsertedRow[] = await step.run(
+    "recover-orphan-leads",
+    async () => {
+      const newIds = phase2.rows.map((r) => r.id);
+      const { data: ownerLeads, error: ownerErr } = await supabase
+        .from("leads")
+        .select("id, normalized")
+        .eq("user_id", input.user_id)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (ownerErr) {
+        // Non-fatal: orphan recovery is a best-effort backfill, not the
+        // primary path. Falling back to just the new rows keeps the run
+        // moving.
+        console.warn(`[scout] orphan-lookup failed: ${ownerErr.message}`);
+        return [];
+      }
+      const candidates = (ownerLeads ?? []) as Array<{
+        id: string;
+        normalized: unknown;
+      }>;
+      const fresh = new Set(newIds);
+      const orphanCandidateIds = candidates
+        .filter((c) => !fresh.has(c.id))
+        .map((c) => c.id);
+      if (orphanCandidateIds.length === 0) return [];
+
+      const { data: existingScores } = await supabase
+        .from("scores")
+        .select("lead_id")
+        .in("lead_id", orphanCandidateIds);
+      const scoredIds = new Set(
+        ((existingScores ?? []) as Array<{ lead_id: string }>).map(
+          (s) => s.lead_id
+        )
+      );
+
+      const orphans: InsertedRow[] = candidates
+        .filter((c) => !fresh.has(c.id) && !scoredIds.has(c.id))
+        .slice(0, ORPHAN_LIMIT)
+        .map((c) => ({ id: c.id, normalized: c.normalized as NormalizedLead }));
+      return orphans;
+    }
+  );
+
+  const allRowsToScore: InsertedRow[] = [...phase2.rows, ...recoveredOrphans];
+
+  // Short-circuit if nothing fresh AND no orphans need rescoring.
+  // Still emit a terminal ok event so the activity rail has an end state.
+  if (allRowsToScore.length === 0) {
     await publish(
       "ok",
       "Scout complete -- no new leads to score",
@@ -271,13 +326,13 @@ export async function runScoutPipeline(
   const phase3 = await step.run("score-leads", async () => {
     await publish(
       "live",
-      `Scoring ${phase2.rows.length} leads`,
-      `0/${phase2.rows.length}`
+      `Scoring ${allRowsToScore.length} leads`,
+      `0/${allRowsToScore.length}`
     );
 
     // Idempotency: skip leads that already have a score row (would
     // happen if this step retries after a partial success).
-    const ids = phase2.rows.map((r) => r.id);
+    const ids = allRowsToScore.map((r) => r.id);
     const { data: existingScores, error: scoreLookupErr } = await supabase
       .from("scores")
       .select("lead_id")
@@ -293,7 +348,7 @@ export async function runScoutPipeline(
     const alreadyScored = new Set(
       existingScoreRows.map((s) => s.lead_id)
     );
-    const toScore = phase2.rows.filter((r) => !alreadyScored.has(r.id));
+    const toScore = allRowsToScore.filter((r) => !alreadyScored.has(r.id));
 
     // Profile lookup (single read; the prompt needs full operator context)
     const { data: profile, error: profileErr } = await supabase
@@ -393,7 +448,7 @@ export async function runScoutPipeline(
     if (phase3.scored.length === 0) {
       await publish(
         "ok",
-        `Scout complete -- ${phase2.rows.length} leads ready`,
+        `Scout complete -- ${phase3.scored.length} leads ready`,
         "done"
       );
       return;
@@ -424,7 +479,7 @@ export async function runScoutPipeline(
     if (!dispatchEvent || phase3.scored.length === 0) {
       await publish(
         "ok",
-        `Scout complete -- ${phase2.rows.length} leads ready`,
+        `Scout complete -- ${phase3.scored.length} leads ready`,
         "done"
       );
       return 0;
@@ -448,7 +503,7 @@ export async function runScoutPipeline(
     if (candidates.length === 0) {
       await publish(
         "ok",
-        `Scout complete -- ${phase2.rows.length} leads ready`,
+        `Scout complete -- ${phase3.scored.length} leads ready`,
         "done"
       );
       return 0;
@@ -476,7 +531,7 @@ export async function runScoutPipeline(
 
     await publish(
       "ok",
-      `Scout complete -- ${phase2.rows.length} leads, ${candidates.length} pitching`,
+      `Scout complete -- ${phase3.scored.length} leads, ${candidates.length} pitching`,
       "done"
     );
     return candidates.length;

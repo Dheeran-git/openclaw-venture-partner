@@ -74,13 +74,43 @@ export function extractBudgetText(description: string): string | null {
   return match[0].replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Decode the small set of named HTML entities that show up in titles and
+ * descriptions scraped from job boards (Indeed, LinkedIn, etc.). Most
+ * sources hand us strings that have already been HTML-encoded once --
+ * "Software Engineer, AI &amp; Product Systems" -- and we want to display
+ * "AI & Product Systems" in the UI without rendering it as HTML.
+ *
+ * Numeric entities (&#39;, &#x27;) cover apostrophes, which Indeed's
+ * mosaic JSON and LinkedIn's JSON-LD payloads both emit.
+ */
+const HTML_ENTITY_DECODER: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&#x27;": "'",
+  "&apos;": "'",
+  "&nbsp;": " ",
+};
+
+export function decodeHtmlEntities(input: string): string {
+  return input.replace(
+    /&(?:amp|lt|gt|quot|apos|nbsp|#39|#x27);/gi,
+    (match) => HTML_ENTITY_DECODER[match.toLowerCase()] ?? match
+  );
+}
+
 export function normalizeScrapedLead(input: ScrapedLeadInput): NormalizedLead {
+  const title = decodeHtmlEntities(input.title).trim();
+  const description = decodeHtmlEntities(input.description).trim();
   return {
     source_url: input.source_url,
     source: detectLeadSource(input.source_url),
-    title: input.title.trim(),
-    description: input.description.trim(),
-    budget_text: extractBudgetText(input.description),
+    title,
+    description,
+    budget_text: extractBudgetText(description),
     posted_at: input.posted_at.toISOString(),
   };
 }

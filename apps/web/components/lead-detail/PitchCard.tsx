@@ -335,34 +335,63 @@ export function PitchCard({ leadId }: PitchCardProps) {
         </div>
       )}
 
-      {/* Footer: actions */}
+      {/* Footer: actions
+          Vertical stack with the primary action on top so it always lands
+          at a predictable location in the narrow right rail. The default
+          oc-pitch-foot styles do justify-content: space-between which
+          wraps awkwardly when the rail is narrow. */}
       {!isFinal && (
-        <div className="oc-pitch-foot" style={{ marginTop: 16 }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            {editing ? (
-              <>
-                <button
-                  className="oc-btn oc-btn-secondary"
-                  onClick={handleSaveEdit}
-                  disabled={actionLoading === "edit"}
-                >
-                  <Check size={13} strokeWidth={2} />
-                  {actionLoading === "edit" ? "Saving…" : "Done editing"}
-                </button>
-                <button
-                  className="oc-btn oc-btn-ghost"
-                  onClick={handleCancelEdit}
-                  disabled={actionLoading === "edit"}
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <>
+        <div
+          style={{
+            padding: "10px 16px",
+            marginTop: 16,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          {editing ? (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                className="oc-btn oc-btn-secondary"
+                onClick={handleSaveEdit}
+                disabled={actionLoading === "edit"}
+                style={{ flex: 1, justifyContent: "center" }}
+              >
+                <Check size={13} strokeWidth={2} />
+                {actionLoading === "edit" ? "Saving…" : "Done editing"}
+              </button>
+              <button
+                className="oc-btn oc-btn-ghost"
+                onClick={handleCancelEdit}
+                disabled={actionLoading === "edit"}
+                style={{ flex: 1, justifyContent: "center" }}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                className="oc-btn oc-btn-primary"
+                onClick={handleApprove}
+                disabled={actionLoading !== null}
+                style={{ width: "100%", justifyContent: "center" }}
+              >
+                {actionLoading === "approve" ? (
+                  "Approving…"
+                ) : (
+                  <>
+                    Approve &amp; send <Send size={13} strokeWidth={1.5} />
+                  </>
+                )}
+              </button>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   className="oc-btn oc-btn-secondary"
                   onClick={() => setEditing(true)}
                   disabled={actionLoading !== null}
+                  style={{ flex: 1, justifyContent: "center" }}
                 >
                   <Edit2 size={13} strokeWidth={1.5} /> Edit
                 </button>
@@ -370,27 +399,13 @@ export function PitchCard({ leadId }: PitchCardProps) {
                   className="oc-btn oc-btn-destructive"
                   onClick={handleReject}
                   disabled={actionLoading !== null}
+                  style={{ flex: 1, justifyContent: "center" }}
                 >
                   <X size={13} strokeWidth={2} />
                   {actionLoading === "reject" ? "Rejecting…" : "Reject"}
                 </button>
-              </>
-            )}
-          </div>
-          {!editing && (
-            <button
-              className="oc-btn oc-btn-primary"
-              onClick={handleApprove}
-              disabled={actionLoading !== null}
-            >
-              {actionLoading === "approve" ? (
-                "Approving…"
-              ) : (
-                <>
-                  Approve &amp; send <Send size={13} strokeWidth={1.5} />
-                </>
-              )}
-            </button>
+              </div>
+            </>
           )}
         </div>
       )}
