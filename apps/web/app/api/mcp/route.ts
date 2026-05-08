@@ -22,6 +22,46 @@ function rpcResult(id: unknown, result: unknown): Response {
   return Response.json({ jsonrpc: "2.0", result, id });
 }
 
+// MCP HTTP+SSE transport handshake. The OpenClaw Gateway opens a GET to this
+// endpoint expecting `Content-Type: text/event-stream` with an initial
+// `endpoint` event that tells it where to POST JSON-RPC messages. We point it
+// back at this same path; our POST handler does the actual JSON-RPC work.
+// The stream is kept alive with keepalive comments until Vercel's serverless
+// timeout closes it; the client reconnects automatically.
+export async function GET(req: Request) {
+  const authHeader = req.headers.get("Authorization");
+  if (!validateSecret(authHeader, "shared") && !validateSecret(authHeader, "worker")) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const endpoint = url.pathname; // "/api/mcp"
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(`event: endpoint\ndata: ${endpoint}\n\n`));
+      const ping = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(`: keepalive\n\n`));
+        } catch {
+          clearInterval(ping);
+        }
+      }, 15_000);
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "Connection": "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
+
 export async function POST(req: Request) {
   const authHeader = req.headers.get("Authorization");
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
