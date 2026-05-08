@@ -40,7 +40,7 @@ export interface PitchDBRow {
  * Terminal pitch states (rejected/sent/approved) outrank everything
  * else so the row badge tells the truth even after a workflow action.
  */
-function statusFor(
+export function statusFor(
   score: ScoreDBRow | null,
   pitch: PitchDBRow | null
 ): LeadStatus {

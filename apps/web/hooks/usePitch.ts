@@ -26,6 +26,13 @@ export function usePitch(leadId: string | undefined) {
       return;
     }
 
+    // Critical: reset state at the START of every effect run. Without
+    // this, switching from a lead WITH a pitch to a lead WITHOUT one
+    // leaves the previous lead's pitch on screen because the maybeSingle
+    // null result didn't clear state. Caused rejected pitches to
+    // "leak" across unrelated leads.
+    setPitch(null);
+
     let cancelled = false;
     const supabase = getSupabaseBrowser();
     let channelRef: ReturnType<typeof supabase.channel> | null = null;
@@ -47,8 +54,11 @@ export function usePitch(leadId: string | undefined) {
 
       if (error) {
         console.error("[usePitch] fetch failed:", error.message);
-      } else if (data) {
-        setPitch(data as unknown as PitchData);
+        setPitch(null);
+      } else {
+        // data is either the latest pitch row or null when this lead has
+        // no pitch yet. Either way, reflect the truth.
+        setPitch(data ? (data as unknown as PitchData) : null);
       }
       setLoading(false);
 

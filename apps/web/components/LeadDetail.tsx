@@ -2,9 +2,15 @@
 
 import { X, ExternalLink } from "lucide-react";
 import { useLeadDetail } from "../hooks/useLeadDetail";
-import { ageFromIso } from "../lib/leadAdapters";
+import { usePitch } from "../hooks/usePitch";
+import { ageFromIso, statusFor } from "../lib/leadAdapters";
 import { decodeHtmlEntities } from "@openclaw/shared";
-import { SOURCE_DOT, SOURCE_LABEL, type LeadSource } from "../lib/fixtures";
+import {
+  SOURCE_DOT,
+  SOURCE_LABEL,
+  type LeadSource,
+  type LeadStatus,
+} from "../lib/fixtures";
 import { PitchCard } from "./lead-detail/PitchCard";
 
 export function LeadDetail({
@@ -15,6 +21,7 @@ export function LeadDetail({
   onClose: () => void;
 }) {
   const { detail, loading } = useLeadDetail(leadId);
+  const { pitch } = usePitch(detail ? leadId : undefined);
 
   if (loading && !detail) {
     return (
@@ -65,7 +72,12 @@ export function LeadDetail({
       <div className="oc-detail-tags">
         <SourceBadge source={normalized.source} />
         <LayerTag layer={layer} />
-        <StatusPill scored={score !== null} />
+        <StatusPill
+          status={statusFor(
+            score ? { lead_id: detail.id, score: score.score, reasoning: null, created_at: "" } : null,
+            pitch ? { status: pitch.status as "draft" | "approved" | "sent" | "rejected" } : null
+          )}
+        />
       </div>
 
       {/* Body */}
@@ -260,24 +272,41 @@ function LayerTag({ layer }: { layer: 1 | 2 | 3 }) {
   );
 }
 
-function StatusPill({ scored }: { scored: boolean }) {
-  const color = scored ? "#10B981" : "#00E5CC";
-  const label = scored ? "Draft ready" : "Scoring";
-  const live = !scored;
+// Mirrors LeadTable's STATUS_MAP so the detail-header pill speaks the
+// same language as the row badge. Both surfaces should agree on what
+// the lead's pipeline state is at any given moment.
+const DETAIL_STATUS_MAP: Record<
+  LeadStatus,
+  { c: string; l: string; live?: boolean }
+> = {
+  scored: { c: "#3B82F6", l: "Scored" },
+  "draft-ready": { c: "#10B981", l: "Draft ready" },
+  drafting: { c: "#00E5CC", l: "Drafting", live: true },
+  scouting: { c: "#00E5CC", l: "Scoring", live: true },
+  approved: { c: "#10B981", l: "Approved" },
+  sent: { c: "#10B981", l: "Sent" },
+  rejected: { c: "#EF4444", l: "Rejected" },
+  archived: { c: "#4A5268", l: "Archived" },
+  snoozed: { c: "#F59E0B", l: "Snoozed" },
+  pending: { c: "#3B82F6", l: "Pending" },
+};
+
+function StatusPill({ status }: { status: LeadStatus }) {
+  const m = DETAIL_STATUS_MAP[status];
   return (
     <span
       className="oc-pill"
       style={{
-        color,
-        background: color + "1A",
-        borderColor: color + "55",
+        color: m.c,
+        background: m.c + "1A",
+        borderColor: m.c + "55",
       }}
     >
       <span
-        className={`oc-dot ${live ? "pulse" : ""}`}
-        style={{ background: color }}
+        className={`oc-dot ${m.live ? "pulse" : ""}`}
+        style={{ background: m.c }}
       />
-      {label}
+      {m.l}
     </span>
   );
 }
