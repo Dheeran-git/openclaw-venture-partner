@@ -172,13 +172,13 @@ free -h    # Verify Swap row shows 2.0Gi
 
 ```bash
 sudo apt update
-sudo apt install -y docker.io docker-compose-plugin
+sudo apt install -y docker.io
 sudo systemctl enable --now docker
 sudo usermod -aG docker $USER
 exit
 ```
 
-Reconnect via SSH so the docker group takes effect.
+Reconnect via SSH so the docker group takes effect. We don't install `docker-compose-plugin` (not in Ubuntu's default repos and not needed — we use `docker run` directly).
 
 ### Step C — Pick a hostname for HTTPS
 
