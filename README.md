@@ -238,6 +238,6 @@ To stand up the OpenClaw Gateway, follow [`docs/HOSTING_GATEWAY.md`](./docs/HOST
 
 ## Credits
 
-Built by **Dheeran S** (lead) and ClawGrowth at RV College of Engineering. Standing on the shoulders of [Peter Steinberger's OpenClaw](https://github.com/openclaw/openclaw) (the open-source personal-AI-assistant platform that does the chat-surface heavy lifting).
+Built by **ClawGrowth** (Team Lead - Sathish) at RV College of Engineering. Standing on the shoulders of [Peter Steinberger's OpenClaw](https://github.com/openclaw/openclaw) (the open-source personal-AI-assistant platform that does the chat-surface heavy lifting).
 
 License: source-available; commercial use restricted pending the post-hackathon licensing decision.
